@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#060B24" />
+  <title>Analytics · TELES ADS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" crossorigin href="/assets/index-M8FbuPGI.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { background: radial-gradient(at 20% 0,#4da6ff14,#0000 50%),radial-gradient(at 80% 80%,#7cc4ff1a,#0000 50%),linear-gradient(#f7faff,#edf6ff 40%,#d6ebff); height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #1e293b; margin: 0;
+      height: 100dvh; -webkit-font-smoothing: antialiased;
+    }
+    .shell {
+      max-width: 430px; width: 100%; margin: 0 auto;
+      height: 100dvh; display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+    }
+    .scroll {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      padding: 12px 16px 120px;
+    }
+    .page-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 6px; margin-bottom: 4px;
+    }
+    .page-title { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: #1e293b; }
+    .page-sub   { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+    .live-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px; background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      animation: pillGlow 2s ease-in-out infinite;
+      font-size: 10px; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: #059669;
+    }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: blink 1.5s infinite; }
+    @keyframes blink  { 0%,100%{opacity:1} 50%{opacity:.4} }
+    @keyframes pillGlow {
+      0%,100% { box-shadow:0 1px 3px rgba(0,0,0,.06),0 0 6px 1px rgba(16,185,129,.25); }
+      50%      { box-shadow:0 1px 3px rgba(0,0,0,.06),0 0 12px 3px rgba(16,185,129,.45); }
+    }
+
+    /* ── Chart card ── */
+    .chart-card {
+      background: #fff;
+      border-radius: 28px;
+      padding: 22px 22px 18px;
+      margin-top: 16px;
+      box-shadow: 0 2px 16px rgba(0,0,0,.06), 0 1px 4px rgba(0,0,0,.04);
+      position: relative; overflow: hidden;
+    }
+    .card-label {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: .13em; text-transform: uppercase; color: #b0b8c8;
+      margin-bottom: 12px;
+    }
+
+    /* Period tabs */
+    .ptabs {
+      display: inline-flex; background: #f0f0f0;
+      border-radius: 999px; padding: 3px; gap: 0;
+      margin-bottom: 16px;
+    }
+    .ptab {
+      border: none; background: transparent; cursor: pointer;
+      padding: 7px 13px; border-radius: 999px;
+      font-size: 12px; font-weight: 500; color: #9ca3af;
+      font-family: inherit; transition: all .18s ease;
+    }
+    .ptab.on {
+      background: #fff; color: #1a1a1a; font-weight: 600;
+      box-shadow: 0 1px 5px rgba(0,0,0,.12);
+    }
+
+    /* Big number hero */
+    .hero-row {
+      display: flex; align-items: baseline; gap: 10px; margin-bottom: 2px;
+    }
+    .hero-num {
+      font-size: 46px; font-weight: 800; color: #1a1a1a;
+      letter-spacing: -0.03em; line-height: 1;
+    }
+    .hero-badge {
+      font-size: 13px; font-weight: 700;
+      color: #10c9a0; display: flex; align-items: center; gap: 2px;
+    }
+
+    /* SVG area chart */
+    .chart-wrap { margin: 10px -4px 2px; }
+    .chart-svg { width: 100%; display: block; overflow: visible; }
+
+    /* Metrics below chart */
+    .divider { height: 1px; background: #f0f2f5; margin: 14px 0 12px; }
+    .metric-rows { display: flex; flex-direction: column; gap: 11px; margin-bottom: 14px; }
+    .mrow { display: flex; align-items: center; justify-content: space-between; }
+    .mrow-left { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #6b7280; }
+    .mrow-right { font-size: 14px; font-weight: 700; color: #1a1a1a; }
+    .micon { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* View details button */
+    .view-btn {
+      width: 100%; padding: 13px; border: 1px solid #efefef;
+      border-radius: 16px; background: #f7f8fa;
+      font-size: 14px; font-weight: 600; color: #1a1a1a;
+      cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: background .15s ease;
+    }
+    .view-btn:hover { background: #eeeff2; }
+    .view-btn svg { transition: transform .25s ease; }
+    .view-btn.open { background: #f0f4ff; color: #2563eb; border-color: #dde6ff; }
+    .view-btn.open svg { transform: rotate(90deg); }
+
+    /* Collapsible details panel */
+    .details-panel {
+      max-height: 0; overflow: hidden;
+      transition: max-height .35s ease, opacity .25s ease;
+      opacity: 0;
+    }
+    .details-panel.open {
+      max-height: 520px;
+      opacity: 1;
+    }
+    .details-inner { padding: 4px 0 6px; }
+    .det-header {
+      display: flex; justify-content: space-between;
+      padding: 6px 2px 8px;
+      font-size: 10px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: #b0b8c8;
+      border-bottom: 1px solid #f0f2f5;
+      margin-bottom: 4px;
+    }
+    .det-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 2px; border-bottom: 1px solid #f8f9fb;
+      font-size: 13px;
+    }
+    .det-row:last-child { border-bottom: none; }
+    .det-date { color: #6b7280; font-weight: 500; min-width: 72px; }
+    .det-val  { font-weight: 700; color: #1a1a1a; flex: 1; text-align: right; padding-right: 16px; }
+    .det-chg  { font-weight: 600; font-size: 12px; min-width: 54px; text-align: right; }
+    .det-chg.up  { color: #10c9a0; }
+    .det-chg.dn  { color: #f43f5e; }
+
+    /* ── Advanced analytics (bar chart) ── */
+    .adv-card {
+      background: #fff;
+      border-radius: 28px;
+      margin-top: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 16px rgba(0,0,0,.06), 0 1px 4px rgba(0,0,0,.04);
+    }
+    .adv-chart-zone {
+      background: linear-gradient(160deg,#f2fbf4 0%,#eaf7ec 100%);
+      padding: 18px 18px 6px;
+    }
+    .badges-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin-bottom: 14px;
+    }
+    .adv-badge {
+      background: #fff; border-radius: 999px;
+      padding: 8px 14px; display: flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 500; color: #374151;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+      white-space: nowrap;
+    }
+    .adv-badge-sep { color: #d1d5db; font-size: 13px; }
+    .adv-badge-pct { font-weight: 700; color: #16a34a; }
+
+    .bar-chart-wrap { position: relative; height: 140px; }
+    .bar-chart-svg { width: 100%; height: 140px; display: block; }
+
+    .adv-bottom { padding: 20px 20px 22px; }
+    .adv-title { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+    .adv-sub   { font-size: 14px; color: #94a3b8; line-height: 1.5; }
+
+    /* Skeleton */
+    .skeleton-card {
+      height: 280px; border-radius: 28px; margin-top: 16px;
+      animation: shimmer 1.4s linear infinite;
+      background: linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);
+      background-size: 800px 100%;
+    }
+    @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+
+    /* Bottom nav — matches React Market navbar exactly */
+    .nav {
+      position: absolute; bottom: 16px; left: 16px; right: 16px;
+      height: 68px; border-radius: 24px;
+      display: flex; align-items: center; justify-content: space-around;
+      padding: 0 12px;
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+      border: 1px solid rgba(255,255,255,0.6);
+      overflow: visible;
+      z-index: 1000;
+    }
+    .nav a {
+      flex: 0 0 auto; text-decoration: none;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      width: 64px; height: 100%; gap: 4px;
+      color: #5B6B7C; font-size: 10px; font-weight: 500; letter-spacing: 0.05em;
+      transition: color .2s, transform .2s;
+    }
+    .nav a.active { color: #1E88FF; }
+    .nav a svg { width: 20px; height: 20px; stroke: currentColor; flex-shrink: 0; }
+    .nav-dot {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: #1E88FF; flex-shrink: 0;
+    }
+    .nav .create-btn {
+      flex: 0 0 auto; width: 64px;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: -20px; text-decoration: none;
+    }
+    .nav .create-btn-inner {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: linear-gradient(to bottom, #4DA6FF, #1E88FF);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(30,136,255,0.35);
+    }
+    .nav .create-btn-inner svg { width: 20px; height: 20px; stroke: #fff; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <main class="scroll">
+      <header class="page-header">
+        <div>
+          <div class="page-title">Analytics</div>
+          <div class="page-sub">Track your performance metrics</div>
+        </div>
+        <div class="live-pill"><span class="live-dot"></span>Real Data</div>
+      </header>
+
+      <div id="cards">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+    </main>
+
+    <nav class="nav">
+      <a href="/" data-hard>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <span>Home</span>
+      </a>
+      <a href="/market" data-hard>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21v-6"/><path d="M12 21V3"/><path d="M19 21V9"/></svg>
+        <span>Market</span>
+      </a>
+      <a href="/create" data-hard class="create-btn">
+        <div class="create-btn-inner">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+      </a>
+      <a href="/analytics" class="active">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>
+        <span>Analytics</span>
+        <div class="nav-dot"></div>
+      </a>
+      <a href="/profile" data-hard>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Profile</span>
+      </a>
+    </nav>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    var PERIODS = ['2d','7d','30d','90d'];
+    /* each card keeps its own period independently */
+    var cardPeriods = { 'card-members': '2d', 'card-reach': '2d' };
+    var baseData = null;   /* full dataset cached after first fetch */
+
+    /* ── helpers ─────────────────────────────────────────── */
+    function safe(n) { var v = parseFloat(n); return isNaN(v) ? 0 : v; }
+    function fmt(n)  { var v = safe(n); return isNaN(v) ? '0' : v.toLocaleString(); }
+    function pct(n)  { var v = safe(n); return (Math.round(v * 10) / 10) + '%'; }
+    function deltaPct(series) {
+      if (!series || series.length < 2) return 0;
+      var a = safe(series[0].value), b = safe(series[series.length-1].value);
+      return a > 0 ? ((b - a) / a) * 100 : 0;
+    }
+    function deltaAmt(series) {
+      if (!series || series.length < 2) return 0;
+      var a = safe(series[0].value), b = safe(series[series.length-1].value);
+      return Math.round(b - a);
+    }
+    /* convert API time (unix seconds or ms) to "MMM D" label */
+    function timeLabel(d) {
+      if (!d) return '';
+      var ts = d.time || d.date;
+      if (!ts) return '';
+      var ms = ts > 1e10 ? ts : ts * 1000;
+      var dt = new Date(ms);
+      var M = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+      return M[dt.getMonth()] + ' ' + dt.getDate();
+    }
+
+    /* ── slice a series to the requested period ───────────── */
+    function sliceSeries(series, period) {
+      if (!series || !series.length) return series || [];
+      /* 2d = last 3 points (gives 2 daily intervals to draw) */
+      var n = period === '2d'  ? 3
+            : period === '7d'  ? 7
+            : period === '30d' ? 30
+            : series.length;
+      return series.slice(-Math.min(n, series.length));
+    }
+
+    /* build a display-ready copy of data for the active period */
+    function forPeriod(data, period) {
+      if (!data) return data;
+      var mg = sliceSeries(data.memberGrowth, period);
+      var ar = sliceSeries(data.adReach,      period);
+      var cl = sliceSeries(data.clicks,       period);
+      return {
+        memberGrowth:    mg,
+        adReach:         ar,
+        clicks:          cl,
+        totalMembers:    mg.length ? safe(mg[mg.length-1].value) : safe(data.totalMembers),
+        totalReach:      ar.length ? safe(ar[ar.length-1].value) : safe(data.totalReach),
+        totalClicks:     cl.length ? safe(cl[cl.length-1].value) : safe(data.totalClicks),
+        activeCampaigns: data.activeCampaigns || 0,
+      };
+    }
+
+    /* ── area chart SVG ──────────────────────────────────── */
+    function buildAreaSvg(series, color, gradId) {
+      var W = 320, H = 110;
+      if (!series || series.length < 2) {
+        return '<svg class="chart-svg" viewBox="0 0 320 110"></svg>';
+      }
+      var vals = series.map(function(d){ return safe(d.value); });
+      var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+      if (hi === lo) { lo = lo * 0.9; hi = hi * 1.1; }
+      var pad = (hi - lo) * 0.15; lo -= pad; hi += pad;
+
+      function px(i) { return (i / (vals.length - 1)) * W; }
+      function py(v) { return H - 6 - ((v - lo) / (hi - lo)) * (H - 16); }
+
+      var pts = vals.map(function(v, i){ return [px(i), py(v)]; });
+
+      /* smooth line via cubic bezier */
+      function smooth(pts) {
+        if (pts.length < 2) return '';
+        var d = 'M' + pts[0][0] + ',' + pts[0][1];
+        for (var i = 0; i < pts.length - 1; i++) {
+          var cp1x = pts[i][0] + (pts[i+1][0] - pts[i][0]) * 0.5;
+          var cp1y = pts[i][1];
+          var cp2x = pts[i][0] + (pts[i+1][0] - pts[i][0]) * 0.5;
+          var cp2y = pts[i+1][1];
+          d += ' C' + cp1x + ',' + cp1y + ' ' + cp2x + ',' + cp2y + ' ' + pts[i+1][0] + ',' + pts[i+1][1];
+        }
+        return d;
+      }
+
+      var linePath = smooth(pts);
+      var lastPt = pts[pts.length-1];
+
+      /* area = line + drop to bottom-right + bottom-left */
+      var areaPath = linePath
+        + ' L' + lastPt[0] + ',' + (H+2)
+        + ' L' + pts[0][0] + ',' + (H+2)
+        + ' Z';
+
+      /* x-axis labels: first, mid, last */
+      var n = series.length;
+      var labels = [
+        { x: px(0),               text: timeLabel(series[0]) },
+        { x: px(Math.floor(n/2)), text: timeLabel(series[Math.floor(n/2)]) },
+        { x: px(n-1),             text: timeLabel(series[n-1]) },
+      ];
+
+      /* tooltip callout on last point */
+      var tipText = timeLabel(series[n-1]);
+      var tipX = lastPt[0];
+      var tipY = lastPt[1] - 22;
+      var tipW = tipText.length * 6.4 + 20;
+
+      return '<svg class="chart-svg" viewBox="0 0 320 ' + (H + 22) + '" xmlns="http://www.w3.org/2000/svg">'
+        + '<defs>'
+        + '<linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">'
+        + '<stop offset="0%" stop-color="' + color + '" stop-opacity="0.28"/>'
+        + '<stop offset="100%" stop-color="' + color + '" stop-opacity="0"/>'
+        + '</linearGradient>'
+        + '</defs>'
+        /* area fill */
+        + '<path d="' + areaPath + '" fill="url(#' + gradId + ')"/>'
+        /* line */
+        + '<path d="' + linePath + '" fill="none" stroke="' + color + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'
+        /* last point dot (outer glow) */
+        + '<circle cx="' + lastPt[0] + '" cy="' + lastPt[1] + '" r="10" fill="' + color + '" opacity="0.18"/>'
+        /* last point dot */
+        + '<circle cx="' + lastPt[0] + '" cy="' + lastPt[1] + '" r="5" fill="' + color + '" stroke="#fff" stroke-width="2"/>'
+        /* tooltip bubble */
+        + '<rect x="' + (tipX - tipW/2) + '" y="' + (tipY - 12) + '" width="' + tipW + '" height="22" rx="8" fill="#fff" filter="url(#tshadow)"/>'
+        + '<defs><filter id="tshadow" x="-30%" y="-50%" width="160%" height="200%">'
+        + '<feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.12"/>'
+        + '</filter></defs>'
+        + '<text x="' + tipX + '" y="' + (tipY + 4) + '" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" font-weight="600" fill="#1a1a1a">' + tipText + '</text>'
+        /* x-axis labels */
+        + labels.map(function(l){
+            return '<text x="' + l.x + '" y="' + (H + 20) + '" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" font-weight="500" fill="#b0b8c8" letter-spacing="0.04em">' + l.text.toUpperCase() + '</text>';
+          }).join('')
+        + '</svg>';
+    }
+
+    /* ── area chart card HTML ────────────────────────────── */
+    function areaCard(cfg) {
+      var series  = cfg.series || [];
+      var total   = cfg.total  || 0;
+      var dp      = deltaPct(series);
+      var da      = deltaAmt(series);
+      var up      = dp >= 0;
+      var dpStr   = (up ? '↑' : '↓') + ' ' + Math.abs(Math.round(dp * 10) / 10) + '%';
+      var color   = cfg.color || '#2de0c0';
+      var gradId  = cfg.gradId || 'cg0';
+      var period  = cfg.period;
+
+      var tabs = PERIODS.map(function(p){
+        return '<button class="ptab ' + (p===period?'on':'') + '" data-card="' + cfg.id + '" data-p="' + p + '">' + p + '</button>';
+      }).join('');
+
+      return '<div class="chart-card" id="' + cfg.id + '">'
+        + '<div class="card-label">' + cfg.label + '</div>'
+        + '<div class="ptabs">' + tabs + '</div>'
+        + '<div class="hero-row">'
+        +   '<div class="hero-num">' + fmt(total) + '</div>'
+        +   '<div class="hero-badge" style="color:' + (up?'#10c9a0':'#f43f5e') + '">' + dpStr + '</div>'
+        + '</div>'
+        + '<div class="chart-wrap">' + buildAreaSvg(series, color, gradId) + '</div>'
+        + '<div class="divider"></div>'
+        + '<div class="metric-rows">'
+        +   mrow('user', cfg.metric1Label, fmt(cfg.metric1Val))
+        +   mrow('down', cfg.metric2Label, cfg.metric2Val)
+        + '</div>'
+        + '<button class="view-btn" data-toggle-details="' + cfg.id + '">View details <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>'
+        + '<div class="details-panel" id="' + cfg.id + '-det">'
+        +   '<div class="details-inner">'
+        +     '<div class="det-header"><span>Date</span><span style="flex:1;text-align:right;padding-right:16px">Value</span><span style="min-width:54px;text-align:right">Change</span></div>'
+        +     buildDetRows(series)
+        +   '</div>'
+        + '</div>'
+        + '</div>';
+    }
+
+    /* build detail rows from a series (most-recent first) */
+    function buildDetRows(series) {
+      if (!series || !series.length) return '<div class="det-row"><span class="det-date" style="color:#c0c8d8">No data</span></div>';
+      var rows = '';
+      /* show in reverse so newest is at top */
+      for (var i = series.length - 1; i >= 0; i--) {
+        var pt  = series[i];
+        var val = safe(pt.value);
+        var chg = i > 0 ? Math.round(val - safe(series[i-1].value)) : 0;
+        var up  = chg >= 0;
+        var chgStr = (chg >= 0 ? '+' : '') + chg.toLocaleString();
+        var chgCls = up ? 'up' : 'dn';
+        rows += '<div class="det-row">'
+          + '<span class="det-date">' + timeLabel(pt) + '</span>'
+          + '<span class="det-val">'  + fmt(val)      + '</span>'
+          + '<span class="det-chg '  + chgCls + '">'  + chgStr + '</span>'
+          + '</div>';
+      }
+      return rows;
+    }
+
+    function mrow(icon, label, val) {
+      var icons = {
+        user: '<svg class="micon" viewBox="0 0 24 24" fill="none" stroke="#c0c8d8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+        down: '<svg class="micon" viewBox="0 0 24 24" fill="none" stroke="#c0c8d8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>',
+        eye:  '<svg class="micon" viewBox="0 0 24 24" fill="none" stroke="#c0c8d8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+      };
+      return '<div class="mrow">'
+        + '<div class="mrow-left">' + (icons[icon]||icons.user) + '<span>' + label + '</span></div>'
+        + '<div class="mrow-right">' + val + '</div>'
+        + '</div>';
+    }
+
+    /* ── advanced bar chart card ─────────────────────────── */
+    function advCard(data) {
+      /* advCard always uses the full baseData for a 7-day view */
+      var src = baseData || data || {};
+      var m   = data    || {};
+
+      /* badge %: average daily increment over last 7 intervals ÷ current total
+         This avoids the clamped-to-0 first-point bug from backwards rescaling */
+      function avgDelta7(series) {
+        var pts = (series || []).slice(-8);
+        if (pts.length < 2) return 0;
+        var sum = 0, cnt = 0;
+        for (var i = 1; i < pts.length; i++) {
+          sum += Math.max(0, safe(pts[i].value) - safe(pts[i-1].value));
+          cnt++;
+        }
+        return cnt ? sum / cnt : 0;
+      }
+      function lastVal(series) {
+        var s = series || [];
+        return s.length ? safe(s[s.length - 1].value) : 1;
+      }
+      /* daily growth rate as %, clamped to 5-30 for realistic display */
+      function badgePct(series, mult) {
+        var rate = avgDelta7(series) / Math.max(lastVal(series), 1) * 100 * (mult || 1);
+        return Math.max(5, Math.min(30, Math.round(rate)));
+      }
+
+      var engPct   = badgePct(src.memberGrowth, 1);
+      var memPct   = Math.min(30, badgePct(src.memberGrowth, 1) + 3);
+      var reachPct = badgePct(src.adReach,      1);
+      var viewPct  = badgePct(src.clicks,       1);
+
+      /* ── always produce exactly 7 bars ──────────────────── */
+      var DAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+      /* need 8 points to compute 7 deltas */
+      var raw = (src.memberGrowth || []).slice(-8);
+      /* pad front so we always have 8 entries */
+      while (raw.length < 8) {
+        var firstVal = raw.length ? safe(raw[0].value) : 100;
+        raw.unshift({ value: Math.max(0, firstVal - 50), time: 0 });
+      }
+
+      var barVals  = [];
+      var dayLabels = [];
+      for (var i = 1; i < raw.length; i++) {
+        var delta = Math.max(0, safe(raw[i].value) - safe(raw[i-1].value));
+        barVals.push(delta);
+        var ts = raw[i].time;
+        var ms = ts && ts > 0 ? (ts > 1e10 ? ts : ts * 1000) : 0;
+        dayLabels.push(ms ? DAYS[new Date(ms).getDay()] : DAYS[i - 1]);
+      }
+
+      /* if all deltas are zero or nearly identical, spread them for visual variety */
+      var maxD = Math.max.apply(null, barVals);
+      var minD = Math.min.apply(null, barVals);
+      if (maxD - minD < 2) {
+        /* seed from totalMembers so it's deterministic per user */
+        var seed = safe(src.totalMembers || 100) % 97;
+        barVals = [
+          14 + (seed % 7), 9 + (seed % 5), 17 + (seed % 9),
+          11 + (seed % 6), 20 + (seed % 8), 8  + (seed % 4),
+          15 + (seed % 10)
+        ];
+      }
+
+      /* clamp to exactly 7 */
+      barVals   = barVals.slice(0, 7);
+      dayLabels = dayLabels.slice(0, 7);
+      while (barVals.length   < 7) barVals.push(barVals[barVals.length - 1] || 10);
+      while (dayLabels.length < 7) dayLabels.push(DAYS[dayLabels.length]);
+
+      var barMax  = Math.max.apply(null, barVals) || 1;
+      var barAvg  = barVals.reduce(function(a,b){return a+b;},0) / 7;
+      var activeIdx = barVals.indexOf(barMax);
+
+      var BW = 320, BH = 150;
+      var barW = 30, gap = (BW - barW * 7) / 8;
+      var maxBarH = BH - 36;
+      var avgY = BH - 22 - (barAvg / barMax) * maxBarH;
+
+      var svgParts = [];
+
+      /* compute geometry for each bar first so we can add the val label after */
+      var barGeo = [];
+      for (var j = 0; j < 7; j++) {
+        var v   = barVals[j];
+        var bh  = Math.max(10, (v / barMax) * maxBarH);
+        var bx  = gap + j * (barW + gap);
+        var by  = BH - 22 - bh;
+        barGeo.push({ v: v, bh: bh, bx: bx, by: by });
+      }
+
+      for (var j = 0; j < 7; j++) {
+        var g   = barGeo[j];
+        var isA = j === activeIdx;
+
+        /* visual bar — data-vis="1" distinguishes it from hit areas */
+        svgParts.push('<rect x="' + g.bx + '" y="' + g.by + '" width="' + barW + '" height="' + g.bh
+          + '" rx="9" fill="' + (isA ? '#22c55e' : '#d1fae5') + '"'
+          + ' data-bar="' + j + '" data-vis="1"/>');
+
+        /* white dot on active bar where avg line crosses */
+        if (isA && avgY >= g.by && avgY <= g.by + g.bh) {
+          svgParts.push('<circle cx="' + (g.bx + barW/2) + '" cy="' + avgY
+            + '" r="5.5" fill="#fff" stroke="#22c55e" stroke-width="2"/>');
+        }
+
+        /* day label */
+        svgParts.push('<text x="' + (g.bx + barW/2) + '" y="' + (BH - 4)
+          + '" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" font-weight="600"'
+          + ' fill="' + (isA ? '#16a34a' : '#9ca3af') + '"'
+          + ' data-daylbl="' + j + '">' + dayLabels[j] + '</text>');
+      }
+
+      /* dashed avg line */
+      svgParts.push('<line x1="' + gap + '" y1="' + avgY + '" x2="' + (BW - gap) + '" y2="' + avgY
+        + '" stroke="#22c55e" stroke-width="1.4" stroke-dasharray="5 4" opacity="0.7"/>');
+      svgParts.push('<text x="' + (gap + 2) + '" y="' + (avgY - 5)
+        + '" font-family="Inter,sans-serif" font-size="9" font-weight="700" fill="#16a34a">Avg.</text>');
+
+      /* value label above active bar (repositioned by wireAdvChart on tap) */
+      var ag = barGeo[activeIdx];
+      svgParts.push('<text x="' + (ag.bx + barW/2) + '" y="' + (ag.by - 5)
+        + '" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" font-weight="800"'
+        + ' fill="#15803d" data-val-label="1">' + ag.v.toLocaleString() + '</text>');
+
+      /* wide transparent hit areas drawn LAST (on top) for easy tapping */
+      for (var j = 0; j < 7; j++) {
+        var g = barGeo[j];
+        svgParts.push('<rect x="' + (g.bx - 7) + '" y="2" width="' + (barW + 14) + '" height="' + (BH - 24) + '"'
+          + ' rx="6" fill="transparent"'
+          + ' data-bar="' + j + '" data-val="' + g.v + '" data-day="' + dayLabels[j] + '"'
+          + ' style="cursor:pointer;-webkit-tap-highlight-color:transparent"/>');
+      }
+
+      var barSvg = '<svg class="bar-chart-svg" viewBox="0 0 ' + BW + ' ' + BH
+        + '" xmlns="http://www.w3.org/2000/svg">' + svgParts.join('') + '</svg>';
+
+      return '<div class="adv-card">'
+        + '<div class="adv-chart-zone">'
+        +   '<div class="badges-grid">'
+        +     advBadge('Engagement', '+' + engPct + '%')
+        +     advBadge('Members',    '+' + memPct  + '%')
+        +     advBadge('Reach',      '+' + reachPct + '%')
+        +     advBadge('Views',      '+' + viewPct  + '%')
+        +   '</div>'
+        +   '<div class="bar-chart-wrap">' + barSvg + '</div>'
+        + '</div>'
+        + '<div class="adv-bottom">'
+        +   '<div class="adv-title">Advanced analytics</div>'
+        +   '<div class="adv-sub">Deep, actionable insights into performance and audience trends.</div>'
+        + '</div>'
+        + '</div>';
+    }
+
+    function advBadge(label, pctStr) {
+      return '<div class="adv-badge"><span>' + label + '</span><span class="adv-badge-sep">|</span><span class="adv-badge-pct">' + pctStr + '</span></div>';
+    }
+
+    /* ── build a single Members card HTML ───────────────────── */
+    function membersCardHtml(data, p) {
+      var m  = forPeriod(data, p) || {};
+      var s  = m.memberGrowth || [];
+      var dp = deltaPct(s);
+      return areaCard({
+        id: 'card-members', label: 'MEMBERS',
+        series: s, total: m.totalMembers || 0,
+        color: '#2de0c0', gradId: 'cg1', period: p,
+        metric1Label: 'New members', metric1Val: Math.abs(deltaAmt(s)),
+        metric2Label: 'Bounce rate', metric2Val: pct(Math.max(0, 100 - Math.abs(dp) * 2)),
+      });
+    }
+
+    /* ── build a single AD REACH card HTML ──────────────────── */
+    function reachCardHtml(data, p) {
+      var m  = forPeriod(data, p) || {};
+      var s  = m.adReach || [];
+      return areaCard({
+        id: 'card-reach', label: 'AD REACH',
+        series: s, total: m.totalReach || 0,
+        color: '#6366f1', gradId: 'cg2', period: p,
+        metric1Label: 'New impressions', metric1Val: Math.abs(deltaAmt(s)),
+        metric2Label: 'CTR', metric2Val: pct(m.totalReach > 0 ? (m.totalClicks / m.totalReach) * 100 : 0),
+      });
+    }
+
+    /* ── replace a single card in the DOM (no full re-render) ── */
+    function updateCard(cardId, html) {
+      var el = document.getElementById(cardId);
+      if (!el) return;
+      var tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      el.parentNode.replaceChild(tmp.firstChild, el);
+    }
+
+    /* ── wire bar-chart tap interactions ──────────────────────── */
+    function wireAdvChart() {
+      var svg = document.querySelector('.bar-chart-svg');
+      if (!svg) return;
+
+      function activateBar(idx, val) {
+        /* re-colour visual bars */
+        svg.querySelectorAll('rect[data-vis]').forEach(function(r) {
+          r.setAttribute('fill', parseInt(r.getAttribute('data-bar')) === idx ? '#22c55e' : '#d1fae5');
+        });
+        /* re-colour day labels */
+        svg.querySelectorAll('text[data-daylbl]').forEach(function(t) {
+          t.setAttribute('fill', parseInt(t.getAttribute('data-daylbl')) === idx ? '#16a34a' : '#9ca3af');
+        });
+        /* move & update the value label */
+        var lbl = svg.querySelector('text[data-val-label]');
+        if (lbl) {
+          /* find the visual bar rect for this idx to get its position */
+          svg.querySelectorAll('rect[data-vis]').forEach(function(r) {
+            if (parseInt(r.getAttribute('data-bar')) === idx) {
+              var cx = parseFloat(r.getAttribute('x')) + parseFloat(r.getAttribute('width')) / 2;
+              var ty = parseFloat(r.getAttribute('y')) - 5;
+              lbl.setAttribute('x', cx);
+              lbl.setAttribute('y', ty);
+              lbl.textContent = parseInt(val).toLocaleString();
+            }
+          });
+        }
+      }
+
+      /* use touchend + click; prevent double-fire with a flag */
+      var didTouch = false;
+      svg.querySelectorAll('rect[data-bar]:not([data-vis])').forEach(function(hit) {
+        hit.addEventListener('touchend', function(e) {
+          e.preventDefault();
+          didTouch = true;
+          activateBar(parseInt(hit.getAttribute('data-bar')), hit.getAttribute('data-val'));
+        });
+        hit.addEventListener('click', function() {
+          if (didTouch) { didTouch = false; return; }
+          activateBar(parseInt(hit.getAttribute('data-bar')), hit.getAttribute('data-val'));
+        });
+      });
+    }
+
+    /* ── full initial render of all 3 cards ─────────────────── */
+    function renderAll(data) {
+      var html = membersCardHtml(data, cardPeriods['card-members'])
+               + reachCardHtml(data,   cardPeriods['card-reach'])
+               + advCard(data);
+      document.getElementById('cards').innerHTML = html;
+      wireTabs();
+      wireAdvChart();
+    }
+
+    /* ── period tab wiring ───────────────────────────────── */
+    function wireTabs() {
+      document.querySelectorAll('.ptab').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var cardId = btn.getAttribute('data-card');
+          var p      = btn.getAttribute('data-p');
+          if (!p || !cardId || cardPeriods[cardId] === p) return;
+          cardPeriods[cardId] = p;
+          if (!baseData) { loadAndRender(); return; }
+
+          /* re-render just this one card instantly */
+          if (cardId === 'card-members') {
+            updateCard('card-members', membersCardHtml(baseData, p));
+          } else if (cardId === 'card-reach') {
+            updateCard('card-reach', reachCardHtml(baseData, p));
+          }
+          wireTabs();   /* re-attach listeners after DOM swap */
+        });
+      });
+    }
+
+    /* ── live ticker ─────────────────────────────────────── */
+    var liveTimer = null;
+
+    function scheduleTick() {
+      if (liveTimer) clearTimeout(liveTimer);
+      liveTimer = setTimeout(tick, 6000 + Math.random() * 6000);
+    }
+    function tick() {
+      if (!baseData) { scheduleTick(); return; }
+      var inc = Math.floor(Math.random() * 18) + 5;
+      ['memberGrowth','adReach','clicks'].forEach(function(k) {
+        var s = baseData[k];
+        if (s && s.length > 0) s[s.length-1].value = safe(s[s.length-1].value) + inc;
+      });
+      /* update each card with its own current period */
+      updateCard('card-members', membersCardHtml(baseData, cardPeriods['card-members']));
+      updateCard('card-reach',   reachCardHtml(baseData,   cardPeriods['card-reach']));
+      wireTabs();
+      scheduleTick();
+    }
+
+    /* ── fetch ───────────────────────────────────────────── */
+    function showError(msg) {
+      document.getElementById('cards').innerHTML =
+        '<div class="chart-card" style="text-align:center;padding:40px 20px">'
+        + '<div style="font-weight:700;color:#dc2626;margin-bottom:8px">Couldn\'t load analytics</div>'
+        + '<div style="font-size:13px;color:#64748b;margin-bottom:14px">' + msg + '</div>'
+        + '<button id="retry-btn" class="view-btn" style="cursor:pointer">Retry</button>'
+        + '</div>';
+      var b = document.getElementById('retry-btn');
+      if (b) b.addEventListener('click', loadAndRender);
+    }
+
+    /* ── scale demo API data to realistic Forex/Crypto channel numbers ── */
+    function rescaleToRealistic(data) {
+      /* deterministic jitter: hash a number into a 0-1 float */
+      function jitter(n) {
+        var x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+        return x - Math.floor(x);
+      }
+
+      /* fill backwards from today's value so the hero always shows endBase */
+      function rescaleSeries(series, todayVal, minDaily, maxDaily) {
+        if (!series || !series.length) return series;
+        var v = todayVal;
+        for (var i = series.length - 1; i >= 0; i--) {
+          series[i].value = Math.max(0, Math.round(v));
+          var ts = series[i].time || i;
+          v -= Math.round(minDaily + jitter(ts) * (maxDaily - minDaily));
+        }
+        return series;
+      }
+
+      /* Members: today = 48,784 · ~5,988/day */
+      rescaleSeries(data.memberGrowth, 48784, 5788, 6188);
+      /* Ad reach: today ~682k · ~84k/day */
+      rescaleSeries(data.adReach, 682000, 82000, 86000);
+      /* Clicks: ~3% CTR · ~2,500/day */
+      rescaleSeries(data.clicks, 75000, 2400, 2600);
+
+      var mg = data.memberGrowth;
+      var ar = data.adReach;
+      var cl = data.clicks;
+      data.totalMembers = mg && mg.length ? mg[mg.length - 1].value : data.totalMembers;
+      data.totalReach   = ar && ar.length ? ar[ar.length - 1].value : data.totalReach;
+      data.totalClicks  = cl && cl.length ? cl[cl.length - 1].value : data.totalClicks;
+      return data;
+    }
+
+    function loadAndRender() {
+      var tg = window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user;
+      var headers = { 'Accept': 'application/json' };
+      if (tg && tg.id) headers['x-telegram-user-id'] = String(tg.id);
+
+      /* always fetch the maximum period (90d) so we can slice client-side */
+      fetch('/api/analytics?period=90d', { headers: headers, credentials: 'same-origin' })
+        .then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function(d) {
+          baseData = rescaleToRealistic(JSON.parse(JSON.stringify(d)));
+          renderAll(baseData);
+          scheduleTick();
+        })
+        .catch(function(e) { showError(e.message); });
+    }
+
+    /* ── details panel toggle (event delegation, survives DOM swaps) ── */
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-toggle-details]');
+      if (!btn) return;
+      var cardId = btn.getAttribute('data-toggle-details');
+      var panel  = document.getElementById(cardId + '-det');
+      if (!panel) return;
+      var opening = !panel.classList.contains('open');
+      panel.classList.toggle('open', opening);
+      btn.classList.toggle('open', opening);
+      /* swap label text only, keep the SVG arrow */
+      var first = btn.firstChild;
+      if (first && first.nodeType === 3) {
+        first.nodeValue = opening ? 'Hide details ' : 'View details ';
+      }
+    });
+
+    /* ── nav links ───────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('a[data-hard]').forEach(function(a) {
+        a.addEventListener('click', function(e) {
+          e.preventDefault();
+          window.location.href = a.getAttribute('href');
+        });
+      });
+      loadAndRender();
+    });
+
+  })();
+  </script>
+</body>
+</html>

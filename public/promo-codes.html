@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Promo Codes — Admin</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#060B1E;--card:#0C1430;--card2:#101A3A;
+    --border:rgba(75,158,255,0.12);--border2:rgba(75,158,255,0.2);
+    --text:#F0F6FF;--muted:#5A7AA8;--soft:#B8D0F0;
+    --blue:#4B9EFF;--blue2:#60AFFF;--green:#22C55E;
+    --red:#EF4444;--yellow:#F59E0B;--purple:#8B5CF6;
+  }
+  body{background:var(--bg);background-image:radial-gradient(ellipse at 50% 0%,rgba(75,158,255,0.07) 0%,transparent 60%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;min-height:100vh;padding-bottom:40px;-webkit-font-smoothing:antialiased}
+
+  /* Header */
+  .header{position:sticky;top:0;z-index:50;background:rgba(6,11,30,0.96);backdrop-filter:blur(16px);border-bottom:1px solid rgba(75,158,255,0.1);display:flex;align-items:center;gap:12px;padding:12px 16px}
+  /* ── TELES LIQUID GLASS: back-btn — remove block to revert ── */
+  .back-btn{width:36px;height:36px;border-radius:10px;background:rgba(75,158,255,0.15);backdrop-filter:blur(28px) saturate(200%);-webkit-backdrop-filter:blur(28px) saturate(200%);border:1.5px solid rgba(147,197,253,0.40);color:var(--soft);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;box-shadow:0 4px 14px rgba(0,0,0,0.10),inset 0 1.5px 0 rgba(255,255,255,0.18)}
+  /* ── END TELES LIQUID GLASS ── */
+  .back-btn:active{background:rgba(75,158,255,0.16)}
+  h1{font-size:17px;font-weight:700;color:var(--text);flex:1}
+  .page-body{padding:16px}
+
+  /* Stats row */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+  .stat-card{background:var(--card);border:1px solid rgba(75,158,255,0.13);border-radius:16px;padding:14px 12px;text-align:center;position:relative;overflow:hidden}
+  .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(75,158,255,0.3),transparent)}
+  .stat-val{font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.5px}
+  .stat-lbl{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+
+  /* Create form */
+  .form-card{background:var(--card);border:1px solid rgba(75,158,255,0.13);border-radius:16px;padding:16px;margin-bottom:20px;position:relative;overflow:hidden}
+  .form-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(75,158,255,0.3),transparent)}
+  .form-title{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;color:var(--text)}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .form-group{display:flex;flex-direction:column;gap:6px}
+  .form-group.full{grid-column:1/-1}
+  label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+  input[type=text],input[type=number],input[type=datetime-local]{
+    width:100%;background:rgba(75,158,255,0.05);border:1px solid rgba(75,158,255,0.15);
+    color:var(--text);border-radius:10px;padding:10px 12px;font-size:14px;
+    font-family:inherit;outline:none;transition:.2s;color-scheme:dark;
+  }
+  input:focus{border-color:rgba(75,158,255,0.5);background:rgba(75,158,255,0.08)}
+  .input-hint{font-size:11px;color:var(--muted);margin-top:2px}
+  .discount-wrap{position:relative}
+  .discount-wrap input{padding-right:36px}
+  .discount-wrap::after{content:'%';position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none}
+  .preview-badge{display:inline-block;background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.25);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-top:6px}
+  .btn-row{display:flex;gap:10px;margin-top:14px}
+  .btn{border:none;border-radius:10px;padding:11px 20px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;width:100%;display:flex;align-items:center;justify-content:center;gap:6px}
+  .btn-primary{background:linear-gradient(135deg,#3B8FF0,#4B9EFF);color:#fff;box-shadow:0 2px 14px rgba(75,158,255,0.3)}
+  .btn-primary:hover{opacity:.92}
+  .btn-ghost{background:rgba(75,158,255,0.07);color:var(--soft);border:1px solid rgba(75,158,255,0.15)}
+  .btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+  .btn:active:not(:disabled){transform:scale(0.97)}
+
+  /* Codes list */
+  .list-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .list-title{font-size:15px;font-weight:700;color:var(--text)}
+  .filter-tabs{display:flex;gap:6px}
+  .tab{font-size:12px;padding:6px 14px;border-radius:20px;border:1px solid rgba(75,158,255,0.15);background:rgba(75,158,255,0.05);color:var(--muted);cursor:pointer;transition:.15s;font-weight:600}
+  .tab:hover{background:rgba(75,158,255,0.1);color:var(--soft)}
+  .tab.active{background:linear-gradient(135deg,#3B8FF0,#4B9EFF);color:#fff;border-color:transparent;box-shadow:0 2px 10px rgba(75,158,255,0.3)}
+
+  .code-card{background:var(--card);border:1px solid rgba(75,158,255,0.12);border-radius:16px;margin-bottom:10px;overflow:hidden;transition:.2s}
+  .code-card:hover{border-color:rgba(75,158,255,0.25)}
+  .code-card.expired{opacity:.55}
+  .code-top{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 10px}
+  .code-name{font-size:16px;font-weight:700;letter-spacing:1.5px;font-family:monospace;color:#fff}
+  .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px}
+  .badge.active{background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.2)}
+  .badge.inactive{background:rgba(90,122,168,0.15);color:var(--muted);border:1px solid rgba(75,158,255,0.12)}
+  .badge.expired{background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.2)}
+  .badge.scheduled{background:rgba(245,158,11,0.12);color:var(--yellow);border:1px solid rgba(245,158,11,0.2)}
+  .code-meta{padding:0 14px 12px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .meta-item{display:flex;flex-direction:column;gap:2px}
+  .meta-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+  .meta-value{font-size:13px;font-weight:600;color:var(--soft)}
+  .progress-bar{height:4px;background:rgba(75,158,255,0.1);border-radius:2px;overflow:hidden;margin:0 14px 12px}
+  .progress-fill{height:100%;background:linear-gradient(90deg,#3B8FF0,#60AFFF);border-radius:2px;transition:width .3s}
+  .code-actions{display:flex;border-top:1px solid rgba(75,158,255,0.08)}
+  .code-action{flex:1;padding:10px 6px;font-size:12px;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:.15s}
+  .code-action:hover{background:rgba(75,158,255,0.06);color:var(--soft)}
+  .code-action.danger{color:var(--red)}
+  .code-action.danger:hover{background:rgba(239,68,68,0.07)}
+  .code-action.success{color:var(--green)}
+  .code-action + .code-action{border-left:1px solid rgba(75,158,255,0.08)}
+
+  /* Edit mode */
+  .edit-form{padding:12px 14px 14px;border-top:1px solid rgba(75,158,255,0.1);display:none;background:rgba(75,158,255,0.02)}
+  .edit-form.open{display:block}
+  .edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .edit-actions{display:flex;gap:8px;margin-top:12px}
+  .edit-actions .btn{padding:9px 16px;font-size:13px}
+
+  /* Empty */
+  .empty{text-align:center;padding:48px 20px;color:var(--muted)}
+  .empty-icon{font-size:40px;margin-bottom:12px}
+  .empty-text{font-size:14px}
+
+  /* Toast */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#0C1A3A;border:1px solid rgba(75,158,255,0.3);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;color:#fff;z-index:999;transition:.3s;white-space:nowrap;pointer-events:none}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .toast.success{border-color:rgba(34,197,94,0.4);background:rgba(6,30,16,0.95)}
+  .toast.error{border-color:rgba(239,68,68,0.4);background:rgba(30,6,6,0.95)}
+
+  /* Loading */
+  .spinner{width:20px;height:20px;border:2px solid rgba(75,158,255,0.15);border-top-color:#4B9EFF;border-radius:50%;animation:spin .7s linear infinite;margin:40px auto}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="header">
+  <button class="back-btn" onclick="history.back()">‹</button>
+  <div>
+    <h1>🎟️ Promo Codes</h1>
+  </div>
+</div>
+
+<div class="page-body">
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-val" id="statTotal">–</div>
+      <div class="stat-lbl">Total Codes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" style="color:var(--green)" id="statActive">–</div>
+      <div class="stat-lbl">Active</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" style="color:var(--yellow)" id="statUses">–</div>
+      <div class="stat-lbl">Total Uses</div>
+    </div>
+  </div>
+
+  <!-- Create Form -->
+  <div class="form-card" id="createFormCard">
+    <div class="form-title">➕ Create New Promo Code</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Code Name</label>
+        <input type="text" id="newCode" placeholder="e.g. CRYPTO20" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+        <div class="input-hint">Letters and numbers only, auto-capitalised</div>
+      </div>
+      <div class="form-group">
+        <label>Discount</label>
+        <div class="discount-wrap">
+          <input type="number" id="newDiscount" min="1" max="99" placeholder="20" oninput="updatePreview()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Max Uses</label>
+        <input type="number" id="newMaxUses" min="1" placeholder="Unlimited">
+      </div>
+      <div class="form-group">
+        <label>Valid From</label>
+        <input type="datetime-local" id="newValidFrom">
+      </div>
+      <div class="form-group">
+        <label>Expires On</label>
+        <input type="datetime-local" id="newValidUntil">
+      </div>
+    </div>
+    <div id="previewBadge" style="display:none" class="preview-badge">20% OFF</div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="createCode()" id="createBtn">Create Code</button>
+    </div>
+  </div>
+
+  <!-- Codes List -->
+  <div class="list-header">
+    <div class="list-title">All Codes</div>
+    <div class="filter-tabs">
+      <button class="tab active" onclick="setFilter('all',this)">All</button>
+      <button class="tab" onclick="setFilter('active',this)">Active</button>
+      <button class="tab" onclick="setFilter('expired',this)">Expired</button>
+    </div>
+  </div>
+  <div id="codesList"><div class="spinner"></div></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+var tg = window.Telegram && window.Telegram.WebApp;
+if(tg) tg.ready();
+var userId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : '7049127887';
+var headers = {'Content-Type':'application/json','x-telegram-user-id':userId};
+
+var allCodes = [];
+var currentFilter = 'all';
+
+function showToast(msg, type) {
+  var el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast show ' + (type||'');
+  setTimeout(function(){ el.className = 'toast'; }, 2800);
+}
+
+function apiFetch(path, opts) {
+  return fetch(path, Object.assign({headers:headers}, opts||{}));
+}
+
+function updatePreview() {
+  var d = parseInt(document.getElementById('newDiscount').value)||0;
+  var b = document.getElementById('previewBadge');
+  if(d > 0 && d < 100) {
+    b.style.display = 'inline-block';
+    b.textContent = d + '% OFF';
+  } else { b.style.display = 'none'; }
+}
+
+function getCodeStatus(c) {
+  if(!c.is_active) return 'inactive';
+  var now = new Date();
+  if(c.valid_until && new Date(c.valid_until) < now) return 'expired';
+  if(c.valid_from && new Date(c.valid_from) > now) return 'scheduled';
+  return 'active';
+}
+
+function fmtDate(d) {
+  if(!d) return '–';
+  return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function toLocalInput(iso) {
+  if(!iso) return '';
+  var d = new Date(iso);
+  // Format for datetime-local: YYYY-MM-DDTHH:MM
+  return d.getFullYear()+'-'+
+    String(d.getMonth()+1).padStart(2,'0')+'-'+
+    String(d.getDate()).padStart(2,'0')+'T'+
+    String(d.getHours()).padStart(2,'0')+':'+
+    String(d.getMinutes()).padStart(2,'0');
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  renderCodes(allCodes);
+}
+
+function loadCodes() {
+  apiFetch('/api/admin/promo-codes').then(function(r){ return r.json(); }).then(function(d){
+    allCodes = d.codes || [];
+    renderStats(allCodes);
+    renderCodes(allCodes);
+  }).catch(function(){ showToast('Failed to load codes','error'); });
+}
+
+function renderStats(codes) {
+  document.getElementById('statTotal').textContent = codes.length;
+  var active = codes.filter(function(c){ return getCodeStatus(c)==='active'; }).length;
+  document.getElementById('statActive').textContent = active;
+  var uses = codes.reduce(function(a,c){ return a + (c.uses_count||0); }, 0);
+  document.getElementById('statUses').textContent = uses;
+}
+
+function renderCodes(codes) {
+  var filtered = codes.filter(function(c){
+    if(currentFilter === 'all') return true;
+    if(currentFilter === 'active') return getCodeStatus(c) === 'active';
+    if(currentFilter === 'expired') { var s=getCodeStatus(c); return s==='expired'||s==='inactive'; }
+    return true;
+  });
+
+  var el = document.getElementById('codesList');
+  if(!filtered.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🎟️</div><div class="empty-text">No codes here yet</div></div>';
+    return;
+  }
+
+  el.innerHTML = filtered.map(function(c) {
+    var status = getCodeStatus(c);
+    var labels = {active:'✅ Active',inactive:'⏸ Disabled',expired:'⛔ Expired',scheduled:'🕐 Scheduled'};
+    var usePct = c.max_uses ? Math.round((c.uses_count/c.max_uses)*100) : 0;
+    return '<div class="code-card' + (status==='expired'||status==='inactive'?' expired':'') + '" id="card-'+c.id+'">' +
+      '<div class="code-top">' +
+        '<div class="code-name">' + c.code + '</div>' +
+        '<span class="badge ' + status + '">' + labels[status] + '</span>' +
+      '</div>' +
+      '<div class="code-meta">' +
+        '<div class="meta-item"><div class="meta-label">Discount</div><div class="meta-value" style="color:var(--green)">' + c.discount_pct + '% OFF</div></div>' +
+        '<div class="meta-item"><div class="meta-label">Uses</div><div class="meta-value">' + c.uses_count + (c.max_uses ? ' / ' + c.max_uses : ' / ∞') + '</div></div>' +
+        '<div class="meta-item"><div class="meta-label">Valid From</div><div class="meta-value" style="font-size:11px">' + fmtDate(c.valid_from) + '</div></div>' +
+        '<div class="meta-item"><div class="meta-label">Expires</div><div class="meta-value" style="font-size:11px' + (status==='expired'?';color:var(--red)':'') + '">' + fmtDate(c.valid_until) + '</div></div>' +
+      '</div>' +
+      (c.max_uses ? '<div class="progress-bar"><div class="progress-fill" style="width:' + Math.min(100,usePct) + '%"></div></div>' : '') +
+      '<div class="code-actions">' +
+        '<button class="code-action" onclick="toggleEdit(' + c.id + ')">✏️ Edit</button>' +
+        (status === 'active'
+          ? '<button class="code-action" onclick="expireNow(' + c.id + ')">⛔ Expire Now</button>'
+          : '<button class="code-action success" onclick="toggleActive(' + c.id + ',true)">✅ Enable</button>') +
+        (c.is_active
+          ? '<button class="code-action" onclick="toggleActive(' + c.id + ',false)">⏸ Disable</button>'
+          : '') +
+        '<button class="code-action danger" onclick="deleteCode(' + c.id + ')">🗑 Delete</button>' +
+      '</div>' +
+      '<div class="edit-form" id="edit-'+c.id+'">' +
+        '<div class="edit-grid">' +
+          '<div class="form-group full"><label>Code Name</label><input type="text" id="ec-'+c.id+'" value="' + c.code + '" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,\'\')"></div>' +
+          '<div class="form-group"><label>Discount %</label><div class="discount-wrap"><input type="number" id="ed-'+c.id+'" min="1" max="99" value="' + c.discount_pct + '"></div></div>' +
+          '<div class="form-group"><label>Max Uses</label><input type="number" id="em-'+c.id+'" min="1" placeholder="Unlimited" value="' + (c.max_uses||'') + '"></div>' +
+          '<div class="form-group"><label>Valid From</label><input type="datetime-local" id="ef-'+c.id+'" value="' + toLocalInput(c.valid_from) + '"></div>' +
+          '<div class="form-group"><label>Expires On</label><input type="datetime-local" id="eu-'+c.id+'" value="' + toLocalInput(c.valid_until) + '"></div>' +
+        '</div>' +
+        '<div class="edit-actions">' +
+          '<button class="btn btn-primary" onclick="saveEdit(' + c.id + ')">Save Changes</button>' +
+          '<button class="btn btn-ghost" onclick="toggleEdit(' + c.id + ')">Cancel</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+window.toggleEdit = function(id) {
+  var el = document.getElementById('edit-'+id);
+  el.classList.toggle('open');
+};
+
+window.saveEdit = function(id) {
+  var code = document.getElementById('ec-'+id).value.trim();
+  var disc = parseInt(document.getElementById('ed-'+id).value);
+  var maxU = document.getElementById('em-'+id).value;
+  var vf = document.getElementById('ef-'+id).value;
+  var vu = document.getElementById('eu-'+id).value;
+  if(!code || !disc) return showToast('Code and discount are required','error');
+  apiFetch('/api/admin/promo-codes/'+id, {
+    method:'PATCH',
+    body:JSON.stringify({
+      code: code,
+      discountPct: disc,
+      maxUses: maxU ? parseInt(maxU) : null,
+      validFrom: vf ? new Date(vf).toISOString() : null,
+      validUntil: vu ? new Date(vu).toISOString() : null
+    })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if(d.error) return showToast(d.error,'error');
+    showToast('✅ Code updated','success');
+    loadCodes();
+  }).catch(function(){ showToast('Update failed','error'); });
+};
+
+window.toggleActive = function(id, enable) {
+  apiFetch('/api/admin/promo-codes/'+id, {
+    method:'PATCH',
+    body:JSON.stringify({isActive: enable})
+  }).then(function(r){ return r.json(); }).then(function(){
+    showToast(enable ? '✅ Code enabled' : '⏸ Code disabled', 'success');
+    loadCodes();
+  }).catch(function(){ showToast('Error','error'); });
+};
+
+window.expireNow = function(id) {
+  if(!confirm('Expire this code immediately? Users can no longer use it.')) return;
+  apiFetch('/api/admin/promo-codes/'+id, {
+    method:'PATCH',
+    body:JSON.stringify({expireNow: true})
+  }).then(function(r){ return r.json(); }).then(function(){
+    showToast('⛔ Code expired','success');
+    loadCodes();
+  }).catch(function(){ showToast('Error','error'); });
+};
+
+window.deleteCode = function(id) {
+  if(!confirm('Permanently delete this promo code?')) return;
+  apiFetch('/api/admin/promo-codes/'+id, {method:'DELETE'})
+    .then(function(){ showToast('🗑 Code deleted','success'); loadCodes(); })
+    .catch(function(){ showToast('Error','error'); });
+};
+
+window.createCode = function() {
+  var code = document.getElementById('newCode').value.trim();
+  var disc = parseInt(document.getElementById('newDiscount').value);
+  var maxU = document.getElementById('newMaxUses').value;
+  var vf = document.getElementById('newValidFrom').value;
+  var vu = document.getElementById('newValidUntil').value;
+  if(!code) return showToast('Enter a code name','error');
+  if(!disc || disc < 1 || disc > 99) return showToast('Enter a discount between 1–99%','error');
+  if(vf && vu && new Date(vf) >= new Date(vu)) return showToast('Valid From must be before Expires On','error');
+  var btn = document.getElementById('createBtn');
+  btn.disabled = true; btn.textContent = 'Creating…';
+  apiFetch('/api/admin/promo-codes', {
+    method:'POST',
+    body:JSON.stringify({
+      code: code,
+      discountPct: disc,
+      maxUses: maxU ? parseInt(maxU) : null,
+      validFrom: vf ? new Date(vf).toISOString() : null,
+      validUntil: vu ? new Date(vu).toISOString() : null
+    })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    btn.disabled = false; btn.textContent = 'Create Code';
+    if(d.error) return showToast(d.error,'error');
+    showToast('🎟️ ' + d.code.code + ' created!','success');
+    // Reset form
+    ['newCode','newDiscount','newMaxUses','newValidFrom','newValidUntil'].forEach(function(id){
+      document.getElementById(id).value='';
+    });
+    document.getElementById('previewBadge').style.display='none';
+    loadCodes();
+  }).catch(function(){
+    btn.disabled = false; btn.textContent = 'Create Code';
+    showToast('Failed to create code','error');
+  });
+};
+
+// Init
+loadCodes();
+</script>
+</body>
+</html>

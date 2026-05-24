@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Settings – TELES ADS</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --bg:#f0f6ff;--card:#ffffff;--border:rgba(75,158,255,0.15);
+    --text:#1e293b;--muted:#64748b;--blue:#4B9EFF;--green:#16a34a;
+    --red:#ef4444;--amber:#f59e0b;
+    --radius:14px;--safe-top:env(safe-area-inset-top,0px);
+  }
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;}
+  body{padding:0 0 32px 0;overflow-x:hidden;}
+
+  .topbar{
+    position:sticky;top:0;z-index:10;
+    background:rgba(240,246,255,0.96);backdrop-filter:blur(18px);
+    padding:calc(var(--safe-top) + 14px) 16px 14px;
+    display:flex;align-items:center;gap:12px;
+    border-bottom:1px solid var(--border);
+  }
+  /* ── TELES LIQUID GLASS: back-btn — remove block to revert ── */
+  .back-btn{
+    width:34px;height:34px;border-radius:10px;
+    background:rgba(255,255,255,0.28);
+    border:1.5px solid rgba(255,255,255,0.72);
+    backdrop-filter:blur(32px) saturate(200%);
+    -webkit-backdrop-filter:blur(32px) saturate(200%);
+    box-shadow:0 4px 16px rgba(0,0,0,0.06),inset 0 1.5px 0 rgba(255,255,255,0.9),inset 0 -1px 0 rgba(0,0,0,0.05);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);
+  }
+  /* ── END TELES LIQUID GLASS ── */
+  .topbar-title{font-size:17px;font-weight:700;flex:1;color:var(--text);}
+
+  .section{padding:16px 16px 0;}
+  .section-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 8px rgba(75,158,255,0.07);}
+
+  .row{
+    display:flex;align-items:center;gap:12px;padding:14px 16px;
+    border-bottom:1px solid var(--border);cursor:default;
+    transition:background 0.15s;
+  }
+  .row:last-child{border-bottom:none;}
+  .row.clickable{cursor:pointer;}
+  .row.clickable:active{background:rgba(75,158,255,0.06);}
+  .row-icon{
+    width:34px;height:34px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;
+  }
+  .row-content{flex:1;min-width:0;}
+  .row-label{font-size:15px;font-weight:500;color:var(--text);}
+  .row-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+  .row-right{display:flex;align-items:center;gap:8px;flex-shrink:0;color:var(--muted);font-size:13px;}
+
+  .toggle{
+    width:42px;height:24px;border-radius:12px;background:rgba(0,0,0,0.12);
+    position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;
+  }
+  .toggle.on{background:var(--blue);}
+  .toggle-knob{
+    position:absolute;top:3px;left:3px;width:18px;height:18px;
+    border-radius:50%;background:#fff;transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.2);
+  }
+  .toggle.on .toggle-knob{left:21px;}
+
+  .badge{
+    padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;
+    background:rgba(75,158,255,0.12);color:var(--blue);
+  }
+  .badge.green{background:rgba(22,163,74,0.12);color:var(--green);}
+  .badge.amber{background:rgba(245,158,11,0.12);color:var(--amber);}
+
+  .profile-card{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px 16px;margin:0 16px;display:flex;align-items:center;gap:14px;
+    box-shadow:0 1px 8px rgba(75,158,255,0.07);
+  }
+  .avatar{
+    width:56px;height:56px;border-radius:18px;flex-shrink:0;
+    background:linear-gradient(135deg,#4B9EFF,#2563eb);
+    display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;
+  }
+  .profile-info{flex:1;}
+  .profile-name{font-size:17px;font-weight:700;color:var(--text);}
+  .profile-id{font-size:12px;color:var(--muted);margin-top:3px;}
+  .profile-plan{
+    margin-top:8px;display:inline-flex;align-items:center;gap:5px;
+    background:rgba(75,158,255,0.1);border:1px solid rgba(75,158,255,0.25);
+    border-radius:8px;padding:4px 10px;font-size:12px;color:var(--blue);font-weight:600;
+  }
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:#fff;border:1px solid var(--border);border-radius:12px;
+    padding:10px 18px;font-size:13px;font-weight:500;z-index:999;color:var(--text);
+    transition:transform 0.3s ease;pointer-events:none;white-space:nowrap;
+    box-shadow:0 4px 24px rgba(75,158,255,0.18);
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);}
+  .toast.success{border-color:rgba(22,163,74,0.35);color:var(--green);}
+
+  .version-footer{text-align:center;padding:24px 16px 0;color:var(--muted);font-size:12px;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="back-btn" id="backBtn">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+  </div>
+  <div class="topbar-title">Settings</div>
+</div>
+
+<div style="height:16px"></div>
+
+<!-- Profile Card -->
+<div class="profile-card" id="profileCard">
+  <div class="avatar" id="avatarEl">?</div>
+  <div class="profile-info">
+    <div class="profile-name" id="profileName">Loading…</div>
+    <div class="profile-id" id="profileId">Telegram ID: —</div>
+    <div class="profile-plan" id="profilePlan">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      Active User
+    </div>
+  </div>
+</div>
+
+<!-- Notifications -->
+<div class="section" style="margin-top:20px">
+  <div class="section-label">Notifications</div>
+  <div class="card">
+    <div class="row">
+      <div class="row-icon" style="background:rgba(59,130,246,0.12)">🔔</div>
+      <div class="row-content">
+        <div class="row-label">Campaign Updates</div>
+        <div class="row-sub">Status changes & delivery progress</div>
+      </div>
+      <div class="toggle on" id="toggleCampaign" onclick="toggleSwitch(this,'campaign')">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-icon" style="background:rgba(34,197,94,0.12)">💳</div>
+      <div class="row-content">
+        <div class="row-label">Payment Confirmations</div>
+        <div class="row-sub">When your payment is verified</div>
+      </div>
+      <div class="toggle on" id="togglePayment" onclick="toggleSwitch(this,'payment')">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-icon" style="background:rgba(139,92,246,0.12)">📊</div>
+      <div class="row-content">
+        <div class="row-label">Weekly Reports</div>
+        <div class="row-sub">Performance summary every week</div>
+      </div>
+      <div class="toggle" id="toggleReports" onclick="toggleSwitch(this,'reports')">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-icon" style="background:rgba(245,158,11,0.12)">🎉</div>
+      <div class="row-content">
+        <div class="row-label">Promotions & Offers</div>
+        <div class="row-sub">Special deals and bonuses</div>
+      </div>
+      <div class="toggle" id="togglePromo" onclick="toggleSwitch(this,'promo')">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Preferences -->
+<div class="section" style="margin-top:16px">
+  <div class="section-label">Preferences</div>
+  <div class="card">
+    <div class="row clickable" onclick="openLanguage()">
+      <div class="row-icon" style="background:rgba(59,130,246,0.12)">🌐</div>
+      <div class="row-content">
+        <div class="row-label">Language</div>
+        <div class="row-sub">Display language for the app</div>
+      </div>
+      <div class="row-right">
+        <span id="langLabel">English</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+    <div class="row clickable" onclick="openCurrency()">
+      <div class="row-icon" style="background:rgba(34,197,94,0.12)">💰</div>
+      <div class="row-content">
+        <div class="row-label">Display Currency</div>
+        <div class="row-sub">How prices are shown</div>
+      </div>
+      <div class="row-right">
+        <span id="currLabel">USDT</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Account -->
+<div class="section" style="margin-top:16px">
+  <div class="section-label">Account</div>
+  <div class="card">
+    <div class="row clickable" onclick="openOrderHistory()">
+      <div class="row-icon" style="background:rgba(59,130,246,0.12)">📋</div>
+      <div class="row-content">
+        <div class="row-label">Order History</div>
+        <div class="row-sub">View all your past campaigns</div>
+      </div>
+      <div class="row-right">
+        <span class="badge green" id="orderCountBadge">0</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+    <div class="row clickable" onclick="copyUserId()">
+      <div class="row-icon" style="background:rgba(139,92,246,0.12)">🪪</div>
+      <div class="row-content">
+        <div class="row-label">Copy Telegram ID</div>
+        <div class="row-sub">Use for support tickets</div>
+      </div>
+      <div class="row-right">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Referral Program -->
+<div class="section" style="margin-top:16px">
+  <div class="section-label">Referral Program</div>
+  <div class="card">
+    <div class="row" style="flex-direction:column;align-items:flex-start;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px;width:100%">
+        <div class="row-icon" style="background:linear-gradient(135deg,rgba(34,197,94,0.12),rgba(59,130,246,0.12))">🎁</div>
+        <div class="row-content">
+          <div class="row-label">Your Referral Link</div>
+          <div class="row-sub">Share and earn — friend gets 10% off their first order</div>
+        </div>
+      </div>
+      <div style="width:100%;background:rgba(75,158,255,0.04);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span id="refLinkText" style="font-size:12px;color:var(--muted);word-break:break-all;flex:1">Loading…</span>
+        <button onclick="copyReferralLink()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">Copy</button>
+      </div>
+    </div>
+
+    <div class="row" style="border-top:1px solid var(--border)">
+      <div class="row-icon" style="background:rgba(139,92,246,0.12)">👥</div>
+      <div class="row-content">
+        <div class="row-label">Total Referrals</div>
+        <div class="row-sub" id="refStats">Loading…</div>
+      </div>
+      <div class="row-right">
+        <span class="badge green" id="refCount">0</span>
+      </div>
+    </div>
+
+    <div class="row clickable" onclick="shareReferral()" style="border-top:1px solid var(--border)">
+      <div class="row-icon" style="background:rgba(59,130,246,0.12)">📤</div>
+      <div class="row-content">
+        <div class="row-label">Share on Telegram</div>
+        <div class="row-sub">Send link to your contacts</div>
+      </div>
+      <div class="row-right">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Support -->
+<div class="section" style="margin-top:16px">
+  <div class="section-label">Support</div>
+  <div class="card">
+    <div class="row clickable" onclick="openSupport()">
+      <div class="row-icon" style="background:rgba(59,130,246,0.12)">💬</div>
+      <div class="row-content">
+        <div class="row-label">Contact Support</div>
+        <div class="row-sub">Get help with your campaigns</div>
+      </div>
+      <div class="row-right">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+    <div class="row clickable" onclick="openFAQ()">
+      <div class="row-icon" style="background:rgba(34,197,94,0.12)">❓</div>
+      <div class="row-content">
+        <div class="row-label">FAQ</div>
+        <div class="row-sub">Common questions answered</div>
+      </div>
+      <div class="row-right">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+    <div class="row clickable" onclick="openTerms()">
+      <div class="row-icon" style="background:rgba(245,158,11,0.12)">📄</div>
+      <div class="row-content">
+        <div class="row-label">Terms of Service</div>
+        <div class="row-sub">Read our terms & privacy policy</div>
+      </div>
+      <div class="row-right">
+        <svg width="14" height="14" viewBox="0 0 24 246" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- About -->
+<div class="section" style="margin-top:16px">
+  <div class="section-label">About</div>
+  <div class="card">
+    <div class="row">
+      <div class="row-icon" style="background:rgba(59,130,246,0.12)">📱</div>
+      <div class="row-content">
+        <div class="row-label">App Version</div>
+      </div>
+      <div class="row-right"><span class="badge">v2.1.0</span></div>
+    </div>
+    <div class="row">
+      <div class="row-icon" style="background:rgba(34,197,94,0.12)">🔒</div>
+      <div class="row-content">
+        <div class="row-label">Security</div>
+        <div class="row-sub">End-to-end encrypted payments</div>
+      </div>
+      <div class="row-right"><span class="badge green">Secure</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="version-footer">TELES ADS &nbsp;·&nbsp; v2.1.0 &nbsp;·&nbsp; © 2026</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var tg = window.Telegram && window.Telegram.WebApp;
+  if(tg){
+    tg.ready(); tg.expand();
+    try { tg.setBackgroundColor('#f0f6ff'); } catch(e){}
+    try { tg.setHeaderColor('#f0f6ff'); } catch(e){}
+    tg.BackButton.show(); tg.BackButton.onClick(function(){ history.back(); });
+  }
+
+  // Load user profile
+  var userId = null;
+  var userName = '';
+  if(tg && tg.initDataUnsafe && tg.initDataUnsafe.user){
+    var u = tg.initDataUnsafe.user;
+    userId = u.id;
+    userName = (u.first_name||'') + (u.last_name ? ' '+u.last_name : '');
+    document.getElementById('profileName').textContent = userName || 'User';
+    document.getElementById('profileId').textContent = 'Telegram ID: ' + u.id;
+    var initials = (u.first_name||'?').charAt(0).toUpperCase();
+    document.getElementById('avatarEl').textContent = initials;
+  } else {
+    document.getElementById('profileName').textContent = 'Leo';
+    document.getElementById('profileId').textContent = 'Telegram ID: 7049127887';
+    document.getElementById('avatarEl').textContent = 'L';
+    userId = 7049127887;
+  }
+
+  // Load order count
+  var headers = {'Content-Type':'application/json'};
+  if(tg && tg.initData) headers['X-Telegram-Init-Data'] = tg.initData;
+  if(userId) headers['X-Telegram-User-Id'] = String(userId);
+
+  fetch('/api/campaigns', {headers: headers}).then(function(r){ return r.json(); }).then(function(d){
+    document.getElementById('orderCountBadge').textContent = (d.campaigns||[]).length;
+  }).catch(function(){});
+
+  // Load saved prefs
+  var prefs = {};
+  try { prefs = JSON.parse(localStorage.getItem('teles_prefs') || '{}'); } catch(e){}
+  ['campaign','payment'].forEach(function(k){
+    if(prefs[k] === false) document.getElementById('toggle'+capitalize(k)).classList.remove('on');
+  });
+  ['reports','promo'].forEach(function(k){
+    if(prefs[k] === true) document.getElementById('toggle'+capitalize(k)).classList.add('on');
+  });
+  if(prefs.lang) document.getElementById('langLabel').textContent = prefs.lang;
+  if(prefs.currency) document.getElementById('currLabel').textContent = prefs.currency;
+
+  function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+  window.toggleSwitch = function(el, key){
+    var isOn = el.classList.contains('on');
+    if(isOn){ el.classList.remove('on'); prefs[key]=false; }
+    else { el.classList.add('on'); prefs[key]=true; }
+    try { localStorage.setItem('teles_prefs', JSON.stringify(prefs)); } catch(e){}
+    showToast(key.charAt(0).toUpperCase()+key.slice(1)+' notifications '+(isOn?'disabled':'enabled'), 'success');
+  };
+
+  window.openLanguage = function(){
+    var langs = ['English','Arabic','Spanish','French','Chinese','Turkish','Russian'];
+    var current = prefs.lang || 'English';
+    var choice = window.prompt('Choose language:\n'+langs.map(function(l,i){ return (i+1)+'. '+l; }).join('\n')+'\n\nEnter number or name:', current);
+    if(!choice) return;
+    var n = parseInt(choice);
+    var selected = (!isNaN(n) && n>=1 && n<=langs.length) ? langs[n-1] : (langs.find(function(l){ return l.toLowerCase()===choice.toLowerCase(); }) || null);
+    if(selected){ prefs.lang=selected; document.getElementById('langLabel').textContent=selected; try{localStorage.setItem('teles_prefs',JSON.stringify(prefs));}catch(e){} showToast('Language set to '+selected,'success'); }
+  };
+
+  window.openCurrency = function(){
+    var currencies = ['USDT','USD','BTC','ETH','EUR'];
+    var current = prefs.currency || 'USDT';
+    var choice = window.prompt('Display currency:\n'+currencies.map(function(c,i){ return (i+1)+'. '+c; }).join('\n'), current);
+    if(!choice) return;
+    var n = parseInt(choice);
+    var selected = (!isNaN(n) && n>=1 && n<=currencies.length) ? currencies[n-1] : (currencies.find(function(c){ return c===choice.toUpperCase(); }) || null);
+    if(selected){ prefs.currency=selected; document.getElementById('currLabel').textContent=selected; try{localStorage.setItem('teles_prefs',JSON.stringify(prefs));}catch(e){} showToast('Currency set to '+selected,'success'); }
+  };
+
+  window.openOrderHistory = function(){
+    if(tg && tg.close){ history.back(); return; }
+    window.location.href = '/';
+  };
+
+  window.copyUserId = function(){
+    var id = userId ? String(userId) : '7049127887';
+    if(navigator.clipboard){ navigator.clipboard.writeText(id).then(function(){ showToast('Telegram ID copied!','success'); }); }
+    else { showToast('ID: '+id, 'success'); }
+  };
+
+  // Referral data
+  var referralData = null;
+  fetch('/api/referral', {headers: headers}).then(function(r){ return r.json(); }).then(function(d){
+    referralData = d;
+    if(d.referralLink) document.getElementById('refLinkText').textContent = d.referralLink;
+    document.getElementById('refCount').textContent = d.totalReferrals || 0;
+    var earned = d.estimatedEarnings ? '$' + d.estimatedEarnings.toFixed(2) + ' total savings unlocked' : 'No referrals yet';
+    document.getElementById('refStats').textContent = (d.totalOrders || 0) + ' orders from referrals · ' + earned;
+  }).catch(function(){
+    document.getElementById('refLinkText').textContent = 'https://t.me/TelesAdsBot?start=ref_' + (userId || '');
+    document.getElementById('refStats').textContent = 'Could not load referral stats';
+  });
+
+  window.copyReferralLink = function(){
+    var link = (referralData && referralData.referralLink) || 'https://t.me/TelesAdsBot?start=ref_' + (userId || '');
+    if(navigator.clipboard){ navigator.clipboard.writeText(link).then(function(){ showToast('Referral link copied!','success'); }); }
+    else { showToast('Link: ' + link,'success'); }
+  };
+
+  window.shareReferral = function(){
+    var link = (referralData && referralData.referralLink) || 'https://t.me/TelesAdsBot?start=ref_' + (userId || '');
+    var msg = encodeURIComponent('Join TELES ADS and grow your Telegram channel! Use my link for 10% off your first order: ' + link);
+    var shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + msg;
+    if(tg && tg.openTelegramLink){ tg.openTelegramLink(shareUrl); }
+    else { window.open(shareUrl,'_blank'); }
+  };
+
+  window.openSupport = function(){
+    if(tg && tg.openTelegramLink){ tg.openTelegramLink('https://t.me/TelesAdsSupport'); }
+    else { window.open('https://t.me/TelesAdsSupport','_blank'); }
+  };
+
+  window.openFAQ = function(){
+    if(tg && tg.openLink){ tg.openLink('https://t.me/TelesAdsSupport'); }
+    else { window.open('https://t.me/TelesAdsSupport','_blank'); }
+  };
+
+  window.openTerms = function(){
+    showToast('Terms: All sales final. Delivery within 7 days.','success');
+  };
+
+  // Back button
+  document.getElementById('backBtn').addEventListener('click', function(){ history.back(); });
+
+  function showToast(msg, type){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast'+(type?' '+type:'');
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function(){ t.classList.remove('show'); }, 2500);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#060B1E" />
+  <title>Package Settings · TELES ADS Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#060B1E;--card:#0C1430;--card2:#101A3A;--border:rgba(75,158,255,0.12);
+      --blue:#4B9EFF;--blue2:#60AFFF;--green:#22C55E;--amber:#F59E0B;--red:#EF4444;
+      --text:#F0F6FF;--muted:#5A7AA8;--soft:#B8D0F0;--radius:16px;
+    }
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+    body{display:flex;flex-direction:column;min-height:100dvh;overflow-x:hidden;background-image:radial-gradient(ellipse at 50% 0%,rgba(75,158,255,0.06) 0%,transparent 60%);}
+
+    .topbar{position:sticky;top:0;z-index:50;background:rgba(6,11,30,0.96);backdrop-filter:blur(16px);border-bottom:1px solid rgba(75,158,255,0.1);padding:12px 16px;display:flex;align-items:center;gap:12px;}
+    .topbar-back{width:36px;height:36px;border-radius:10px;background:rgba(75,158,255,0.08);border:1px solid rgba(75,158,255,0.18);color:var(--soft);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:.15s;}
+    .topbar-back:active{background:rgba(75,158,255,0.16);}
+    .topbar-title{font-size:17px;font-weight:700;letter-spacing:-0.3px;flex:1;}
+    .admin-badge{font-size:10px;font-weight:700;background:linear-gradient(135deg,#4B9EFF,#60AFFF);color:#fff;padding:4px 10px;border-radius:8px;letter-spacing:1px;box-shadow:0 0 12px rgba(75,158,255,0.35);}
+
+    .main{flex:1;overflow-y:auto;padding:16px;padding-bottom:40px;display:flex;flex-direction:column;gap:12px;}
+
+    /* Info banner */
+    .info-banner{background:rgba(75,158,255,0.08);border:1px solid rgba(75,158,255,0.2);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;}
+    .info-text{font-size:13px;color:var(--soft);line-height:1.55;}
+    .info-text strong{color:var(--text);}
+
+    /* Package cards — tappable */
+    .pkg-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;transition:background .15s,border-color .15s;-webkit-tap-highlight-color:transparent;user-select:none;}
+    .pkg-card:active{background:var(--card2);border-color:rgba(75,158,255,0.28);}
+    .pkg-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+    .pkg-info{flex:1;min-width:0;}
+    .pkg-name{font-size:15px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .pkg-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+    .popular-badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:9px;font-weight:700;letter-spacing:0.8px;padding:2px 7px;border-radius:6px;margin-left:6px;vertical-align:middle;}
+    .pkg-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;}
+    .pkg-target-val{font-size:14px;font-weight:700;color:var(--blue);}
+    .pkg-target-val.unset{color:var(--muted);font-weight:500;}
+    .pkg-edit-hint{font-size:11px;color:var(--muted);}
+    .chevron{color:var(--muted);opacity:0.6;}
+
+    /* Save all button */
+    .save-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px;border:none;border-radius:13px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:.15s;background:linear-gradient(135deg,#3B8FF0,#4B9EFF);color:#fff;box-shadow:0 4px 18px rgba(75,158,255,0.3);}
+    .save-btn:active{transform:scale(0.98);opacity:.9;}
+    .save-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+    /* Toast */
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#22C55E;color:#fff;font-size:13px;font-weight:700;padding:10px 20px;border-radius:12px;box-shadow:0 4px 20px rgba(34,197,94,0.4);z-index:999;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;}
+    .toast.show{opacity:1;}
+
+    /* Bottom sheet */
+    .sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s;}
+    .sheet-overlay.open{opacity:1;pointer-events:all;}
+    .sheet{position:fixed;bottom:0;left:0;right:0;z-index:201;background:#0C1430;border-radius:22px 22px 0 0;border-top:1px solid rgba(75,158,255,0.18);padding:0 20px 40px;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);}
+    .sheet.open{transform:translateY(0);}
+    .sheet-handle{width:36px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:12px auto 18px;}
+    .sheet-pkg-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+    .sheet-pkg-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+    .sheet-pkg-name{font-size:17px;font-weight:700;}
+    .sheet-pkg-price{font-size:13px;color:var(--muted);margin-top:2px;}
+    .sheet-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:10px;}
+    .sheet-input{width:100%;padding:14px 16px;background:rgba(255,255,255,0.05);border:1.5px solid rgba(75,158,255,0.25);border-radius:13px;font-size:22px;font-weight:700;color:#fff;font-family:inherit;outline:none;transition:border-color .2s;text-align:center;}
+    .sheet-input:focus{border-color:#4B9EFF;background:rgba(75,158,255,0.07);}
+    .sheet-input::placeholder{color:var(--muted);font-weight:400;font-size:16px;}
+    .presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;margin-bottom:20px;}
+    .preset{padding:7px 13px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(75,158,255,0.22);background:rgba(75,158,255,0.06);color:var(--soft);transition:.15s;-webkit-tap-highlight-color:transparent;}
+    .preset:active{background:rgba(75,158,255,0.18);color:#fff;}
+    .sheet-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .btn-cancel{padding:13px;border:1px solid rgba(75,158,255,0.2);border-radius:12px;font-size:14px;font-weight:600;font-family:inherit;background:rgba(255,255,255,0.04);color:var(--soft);cursor:pointer;transition:.15s;}
+    .btn-cancel:active{background:rgba(255,255,255,0.08);}
+    .btn-confirm{padding:13px;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:inherit;background:linear-gradient(135deg,#3B8FF0,#4B9EFF);color:#fff;cursor:pointer;transition:.15s;box-shadow:0 3px 12px rgba(75,158,255,0.3);}
+    .btn-confirm:active{opacity:.85;}
+
+    #loading{display:flex;align-items:center;justify-content:center;padding:60px;gap:12px;color:var(--muted);}
+    .spin{animation:spin 0.8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #access-denied{display:none;text-align:center;padding:60px 20px;}
+    #access-denied h2{font-size:20px;font-weight:700;margin-bottom:8px;}
+    #access-denied p{color:var(--muted);font-size:14px;}
+
+    .icon-starter{background:rgba(100,150,255,0.12);}
+    .icon-growth{background:rgba(34,197,94,0.12);}
+    .icon-pro{background:rgba(168,85,247,0.12);}
+    .icon-elite{background:rgba(245,158,11,0.12);}
+    .icon-ultimate{background:rgba(239,68,68,0.12);}
+    .icon-vip{background:rgba(236,72,153,0.12);}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-back" onclick="history.back()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </div>
+    <div class="topbar-title">Package Settings</div>
+    <div class="admin-badge">ADMIN</div>
+  </div>
+
+  <div class="main" id="mainContent">
+    <div id="loading">
+      <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+      Loading packages…
+    </div>
+    <div id="access-denied">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+      <h2>Access Denied</h2>
+      <p>Admin access required.</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">✓ Saved!</div>
+
+  <!-- Bottom sheet -->
+  <div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-pkg-header">
+      <div class="sheet-pkg-icon" id="sheetIcon"></div>
+      <div>
+        <div class="sheet-pkg-name" id="sheetName"></div>
+        <div class="sheet-pkg-price" id="sheetPrice"></div>
+      </div>
+    </div>
+    <div class="sheet-label">Members Target</div>
+    <input class="sheet-input" type="number" id="sheetInput" inputmode="numeric" pattern="[0-9]*" min="100" max="100000" step="100" placeholder="Enter number of members" />
+    <div class="presets" id="sheetPresets"></div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" onclick="closeSheet()">Cancel</button>
+      <button class="btn-confirm" onclick="confirmSheet()">Save</button>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var ADMIN_ID = 7049127887;
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (tg) { tg.ready(); tg.expand(); }
+
+    function getUid() {
+      try {
+        var u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+        if (u && u.id) return u.id;
+      } catch(e) {}
+      try { var v = localStorage.getItem('_ta_uid'); if (v) return parseInt(v, 10); } catch(e) {}
+      return null;
+    }
+
+    function headers() {
+      var uid = getUid() || ADMIN_ID;
+      return { 'Content-Type': 'application/json', 'x-telegram-user-id': String(uid) };
+    }
+
+    function showToast(msg, isErr) {
+      var t = document.getElementById('toast');
+      t.textContent = msg || '✓ Saved!';
+      t.style.background = isErr ? '#EF4444' : '#22C55E';
+      t.classList.add('show');
+      setTimeout(function() { t.classList.remove('show'); }, 2500);
+    }
+
+    var PKG_ICONS    = ['🚀','📈','⚡','💎','🏆','👑'];
+    var PKG_ICON_CLS = ['icon-starter','icon-growth','icon-pro','icon-elite','icon-ultimate','icon-vip'];
+    var PRESETS      = [500, 1000, 1500, 2000, 3000, 5000, 8000, 10000];
+
+    function getStored(pkgId) {
+      try { return localStorage.getItem('_telespkgMembers_' + pkgId); } catch(e) { return null; }
+    }
+
+    function saveForPkg(pkg, val) {
+      try {
+        localStorage.setItem('_telespkgMembers_' + pkg.id, String(val));
+        if (pkg.name) {
+          localStorage.setItem('_telespkgMembersName_' + pkg.name.toLowerCase(), String(val));
+          var norm = pkg.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+          localStorage.setItem('_telespkgMembersName_' + norm, String(val));
+        }
+      } catch(e) {}
+    }
+
+    /* ── Bottom sheet ── */
+    var _activePkg = null;
+
+    window.openSheet = function(pkg, iconCls, icon) {
+      _activePkg = pkg;
+      var stored = getStored(pkg.id);
+
+      document.getElementById('sheetIcon').className = 'sheet-pkg-icon ' + iconCls;
+      document.getElementById('sheetIcon').textContent = icon;
+      document.getElementById('sheetName').textContent = pkg.name;
+      document.getElementById('sheetPrice').textContent = '$' + pkg.price + ' / order · ' + (pkg.members || '—');
+
+      var inp = document.getElementById('sheetInput');
+      inp.value = stored || '';
+      inp.placeholder = 'Enter number of members';
+
+      /* Render preset buttons */
+      var presEl = document.getElementById('sheetPresets');
+      presEl.innerHTML = '';
+      PRESETS.forEach(function(p) {
+        var btn = document.createElement('div');
+        btn.className = 'preset';
+        btn.textContent = p >= 1000 ? (p/1000) + 'k' : p;
+        btn.onclick = function() { inp.value = p; inp.focus(); };
+        presEl.appendChild(btn);
+      });
+
+      document.getElementById('sheetOverlay').classList.add('open');
+      document.getElementById('sheet').classList.add('open');
+
+      /* Focus the input after animation */
+      setTimeout(function() { inp.focus(); }, 320);
+    };
+
+    window.closeSheet = function() {
+      document.getElementById('sheetOverlay').classList.remove('open');
+      document.getElementById('sheet').classList.remove('open');
+      _activePkg = null;
+    };
+
+    window.confirmSheet = function() {
+      if (!_activePkg) return;
+      var val = parseInt(document.getElementById('sheetInput').value, 10);
+      if (!val || val < 100) {
+        showToast('Enter at least 100', true);
+        return;
+      }
+      saveForPkg(_activePkg, val);
+
+      /* Update card display */
+      var lbl = document.getElementById('tval_' + _activePkg.id);
+      if (lbl) {
+        lbl.textContent = val.toLocaleString();
+        lbl.className = 'pkg-target-val';
+      }
+
+      closeSheet();
+      showToast(_activePkg.name + ' → ' + val.toLocaleString() + ' members saved!');
+    };
+
+    /* ── Build cards ── */
+    function render(packages) {
+      var el = document.getElementById('loading');
+      if (el) el.remove();
+
+      var main = document.getElementById('mainContent');
+
+      var banner = document.createElement('div');
+      banner.className = 'info-banner';
+      banner.innerHTML = '<div style="flex-shrink:0;margin-top:1px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4B9EFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></div>'
+        + '<div class="info-text"><strong>Tap any package</strong> to set its Members Target — the number of subscribers the campaign progress bar counts toward.</div>';
+      main.appendChild(banner);
+
+      packages.forEach(function(pkg, idx) {
+        var stored  = getStored(pkg.id);
+        var iconCls = PKG_ICON_CLS[idx] || 'icon-starter';
+        var icon    = PKG_ICONS[idx]    || '📦';
+        var popularBadge = pkg.popular ? '<span class="popular-badge">POPULAR</span>' : '';
+
+        var card = document.createElement('div');
+        card.className = 'pkg-card';
+        card.innerHTML =
+          '<div class="pkg-icon ' + iconCls + '">' + icon + '</div>'
+          + '<div class="pkg-info">'
+          +   '<div class="pkg-name">' + pkg.name + popularBadge + '</div>'
+          +   '<div class="pkg-sub">$' + pkg.price + ' / order</div>'
+          + '</div>'
+          + '<div class="pkg-right">'
+          +   '<span class="pkg-target-val' + (stored ? '' : ' unset') + '" id="tval_' + pkg.id + '">'
+          +     (stored ? Number(stored).toLocaleString() : 'Not set')
+          +   '</span>'
+          +   '<span class="pkg-edit-hint">' + (stored ? 'members · tap to edit' : 'tap to set') + '</span>'
+          + '</div>'
+          + '<svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
+
+        (function(p, cls, ic) {
+          card.onclick = function() { window.openSheet(p, cls, ic); };
+        })(pkg, iconCls, icon);
+
+        main.appendChild(card);
+      });
+
+      /* Save All button (saves whatever is currently in localStorage — all already saved per-card) */
+      var saveWrap = document.createElement('div');
+      saveWrap.innerHTML = '<button class="save-btn" onclick="saveAllConfirm()">'
+        + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>'
+        + 'Save All Package Settings'
+        + '</button>';
+      main.appendChild(saveWrap);
+
+      window._pkgList = packages;
+    }
+
+    window.saveAllConfirm = function() {
+      var count = 0;
+      (window._pkgList || []).forEach(function(pkg) {
+        var v = getStored(pkg.id);
+        if (v) count++;
+      });
+      showToast(count + ' package target' + (count !== 1 ? 's' : '') + ' active!');
+    };
+
+    /* ── Boot ── */
+    var uid = getUid();
+    if (uid !== ADMIN_ID) {
+      var isAdm = false;
+      try { isAdm = localStorage.getItem('_ta_adm') === '1'; } catch(e) {}
+      if (!isAdm) {
+        var el2 = document.getElementById('loading');
+        if (el2) el2.remove();
+        document.getElementById('access-denied').style.display = 'block';
+        return;
+      }
+    }
+
+    fetch('/api/admin/packages', { headers: headers() })
+      .then(function(r) { return r.json(); })
+      .then(function(data) { render(data.packages || []); })
+      .catch(function() {
+        var el2 = document.getElementById('loading');
+        if (el2) el2.innerHTML = '<span style="color:#EF4444">Failed to load packages.</span>';
+      });
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+  <title>Market Admin · TELES ADS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #f0f4ff; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 40px;
+    }
+    .header {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: #fff;
+      padding: 20px 16px 16px;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .header h1 { font-size: 20px; font-weight: 800; }
+    .header p  { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+    .badge { display: inline-block; background: rgba(255,255,255,0.2); border-radius: 6px; padding: 2px 8px; font-size: 10px; font-weight: 700; margin-top: 6px; }
+    .section { padding: 16px; }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      margin-bottom: 12px;
+    }
+    .card h2 { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+    .card h2::before { content: ''; display: inline-block; width: 4px; height: 16px; background: #2563eb; border-radius: 2px; }
+    label { font-size: 12px; font-weight: 600; color: #64748b; display: block; margin-bottom: 4px; margin-top: 10px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #1e293b;
+      background: #f8fafc;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #2563eb; background: #fff; }
+    textarea { resize: vertical; min-height: 60px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn {
+      display: block; width: 100%;
+      padding: 13px;
+      border: none; border-radius: 12px;
+      font-size: 15px; font-weight: 700; font-family: inherit;
+      cursor: pointer;
+      margin-top: 14px;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn:active { transform: scale(0.98); opacity: 0.85; }
+    /* ── TELES LIQUID GLASS: btn-primary — remove block to revert ── */
+    .btn-primary {
+      background: rgba(29,78,216,0.74);
+      backdrop-filter: blur(24px) saturate(200%) brightness(1.1);
+      -webkit-backdrop-filter: blur(24px) saturate(200%) brightness(1.1);
+      border: 1px solid rgba(147,197,253,0.45);
+      box-shadow: 0 10px 32px rgba(37,99,235,0.30), inset 0 1.5px 0 rgba(255,255,255,0.28), inset 0 -1px 0 rgba(0,0,0,0.10);
+      color: #fff;
+    }
+    /* ── END TELES LIQUID GLASS ── */
+    .btn-danger  { background: #fee2e2; color: #dc2626; font-size: 13px; padding: 8px; margin-top: 0; }
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #1e293b; color: #fff;
+      padding: 10px 20px; border-radius: 10px;
+      font-size: 13px; font-weight: 600;
+      opacity: 0; transition: opacity .3s;
+      z-index: 999; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+    .toast.error { background: #dc2626; }
+    .ch-list { display: flex; flex-direction: column; gap: 10px; }
+    .ch-item {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+    }
+    .ch-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .ch-name { font-size: 14px; font-weight: 700; color: #1e293b; }
+    .ch-handle { font-size: 12px; color: #2563eb; font-weight: 600; margin-top: 1px; }
+    .ch-meta { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .chip {
+      font-size: 10px; font-weight: 700;
+      padding: 3px 8px; border-radius: 6px;
+      background: #eff6ff; color: #1d4ed8;
+    }
+    .chip.green { background: #f0fdf4; color: #16a34a; }
+    .chip.orange { background: #fff7ed; color: #ea580c; }
+    .empty {
+      text-align: center; padding: 40px 20px;
+      color: #94a3b8; font-size: 13px;
+    }
+    .empty-icon { font-size: 40px; margin-bottom: 8px; }
+    .spinner { text-align: center; padding: 30px; color: #94a3b8; font-size: 13px; }
+    .access-denied {
+      text-align: center; padding: 60px 24px;
+    }
+    .access-denied .icon { font-size: 60px; margin-bottom: 16px; }
+    .access-denied h2 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+    .access-denied p  { font-size: 14px; color: #64748b; }
+  </style>
+</head>
+<body>
+<div id="root">
+  <div class="spinner">Loading…</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  var ADMIN_ID = 7049127887;
+  var tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) tg.ready && tg.ready();
+
+  var initData = (tg && tg.initData) || '';
+  var tgUser   = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
+  var userId   = tgUser ? tgUser.id : 0;
+
+  /* ── helpers ── */
+  function toast(msg, isErr) {
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast show' + (isErr ? ' error' : '');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function() { el.className = 'toast'; }, 2800);
+  }
+
+  function authHeaders() {
+    var h = { 'Content-Type': 'application/json' };
+    if (initData) h['x-telegram-init-data'] = initData;
+    h['x-telegram-user-id'] = String(ADMIN_ID);
+    return h;
+  }
+
+  function fmt(n) {
+    if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+    return String(n);
+  }
+
+  /* ── render ── */
+  function renderAccessDenied() {
+    document.getElementById('root').innerHTML =
+      '<div class="access-denied">' +
+        '<div class="icon">🔒</div>' +
+        '<h2>Admin Only</h2>' +
+        '<p>This panel is restricted to the platform administrator.</p>' +
+      '</div>';
+  }
+
+  function renderPage(channels) {
+    var listHTML = '';
+    if (!channels || channels.length === 0) {
+      listHTML = '<div class="empty"><div class="empty-icon">📭</div>No channels yet.<br>Add your first one below.</div>';
+    } else {
+      listHTML = '<div class="ch-list">' + channels.map(function(c) {
+        var cat = c.category || 'crypto';
+        return '<div class="ch-item" id="ch-' + c.id + '">' +
+          '<div class="ch-top">' +
+            '<div>' +
+              '<div class="ch-name">' + esc(c.name) + '</div>' +
+              '<div class="ch-handle">' + esc(c.handle) + '</div>' +
+            '</div>' +
+            '<button class="btn btn-danger" onclick="delChannel(' + c.id + ')">🗑 Delete</button>' +
+          '</div>' +
+          '<div class="ch-meta">' +
+            '<span class="chip">' + fmt(c.members || 0) + ' members</span>' +
+            '<span class="chip orange">$' + (c.price || 0) + ' USDT</span>' +
+            '<span class="chip green">' + cat + '</span>' +
+          '</div>' +
+          (c.description ? '<div style="font-size:12px;color:#64748b;margin-top:6px;">' + esc(c.description) + '</div>' : '') +
+        '</div>';
+      }).join('') + '</div>';
+    }
+
+    document.getElementById('root').innerHTML =
+      '<div class="header">' +
+        '<h1>📡 Market Admin</h1>' +
+        '<p>Manage channels visible in the Market tab</p>' +
+        '<span class="badge">Admin: Leo</span>' +
+      '</div>' +
+      '<div class="section">' +
+        '<div class="card">' +
+          '<h2>Add New Channel</h2>' +
+          '<label>Channel Name *</label>' +
+          '<input id="f-name" placeholder="e.g. Gold Hunter FX" />' +
+          '<label>@Username *</label>' +
+          '<input id="f-handle" placeholder="@channelname" />' +
+          '<label>Telegram Link *</label>' +
+          '<input id="f-link" placeholder="https://t.me/channelname" />' +
+          '<label>Category</label>' +
+          '<select id="f-cat">' +
+            '<option value="forex">Forex</option>' +
+            '<option value="crypto">Crypto</option>' +
+            '<option value="binary">Binary</option>' +
+          '</select>' +
+          '<div class="row2">' +
+            '<div><label>Members</label><input id="f-members" type="number" placeholder="50000" /></div>' +
+            '<div><label>Price (USDT) *</label><input id="f-price" type="number" placeholder="150" /></div>' +
+          '</div>' +
+          '<label>Description</label>' +
+          '<textarea id="f-desc" placeholder="Short description of the channel..."></textarea>' +
+          '<button class="btn btn-primary" onclick="addChannel()">➕ Add to Market</button>' +
+        '</div>' +
+
+        '<div class="card">' +
+          '<h2>Live Channels (' + channels.length + ')</h2>' +
+          listHTML +
+        '</div>' +
+      '</div>';
+  }
+
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  /* ── API ── */
+  function loadChannels(cb) {
+    fetch('/api/admin/channels', { headers: authHeaders() })
+      .then(function(r) { return r.json(); })
+      .then(function(d) { cb(d.channels || []); })
+      .catch(function() { cb([]); });
+  }
+
+  window.addChannel = function() {
+    var name    = (document.getElementById('f-name').value || '').trim();
+    var handle  = (document.getElementById('f-handle').value || '').trim();
+    var link    = (document.getElementById('f-link').value || '').trim();
+    var cat     = document.getElementById('f-cat').value;
+    var members = parseInt(document.getElementById('f-members').value) || 0;
+    var price   = parseInt(document.getElementById('f-price').value) || 0;
+    var desc    = (document.getElementById('f-desc').value || '').trim();
+
+    if (!name) { toast('Channel name is required', true); return; }
+    if (!handle) { toast('@Username is required', true); return; }
+    if (!price) { toast('Price is required', true); return; }
+
+    if (!handle.startsWith('@')) handle = '@' + handle;
+
+    var btn = document.querySelector('.btn-primary');
+    btn.disabled = true;
+    btn.textContent = 'Adding…';
+
+    fetch('/api/admin/channels', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({
+        name: name,
+        handle: handle,
+        category: cat,
+        members: members,
+        price: price,
+        description: desc,
+        engagementRate: 0,
+        link: link
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.error) { toast(d.error, true); btn.disabled = false; btn.textContent = '➕ Add to Market'; return; }
+      toast('✅ Channel added to Market!');
+      loadChannels(renderPage);
+    })
+    .catch(function() { toast('Server error', true); btn.disabled = false; btn.textContent = '➕ Add to Market'; });
+  };
+
+  window.delChannel = function(id) {
+    if (!confirm('Delete this channel from Market?')) return;
+    fetch('/api/admin/channels/' + id, { method: 'DELETE', headers: authHeaders() })
+      .then(function(r) { return r.json(); })
+      .then(function() { toast('Deleted'); loadChannels(renderPage); })
+      .catch(function() { toast('Error', true); });
+  };
+
+  /* ── init ── */
+  if (userId === ADMIN_ID || !userId) {
+    loadChannels(renderPage);
+  } else {
+    renderAccessDenied();
+  }
+
+})();
+</script>
+</body>
+</html>

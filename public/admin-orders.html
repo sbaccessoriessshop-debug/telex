@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#060B1E" />
+  <title>Admin Panel — TELES ADS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#060B1E;--card:#0C1430;--card2:#101A3A;--border:rgba(75,158,255,0.12);
+      --blue:#4B9EFF;--blue2:#60AFFF;--green:#22C55E;--amber:#F59E0B;--red:#EF4444;--purple:#8B5CF6;
+      --text:#F0F6FF;--muted:#5A7AA8;--soft:#B8D0F0;
+    }
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+    body{display:flex;flex-direction:column;min-height:100dvh;overflow-x:hidden;background-image:radial-gradient(ellipse at 50% 0%,rgba(75,158,255,0.06) 0%,transparent 60%);}
+
+    /* Top Bar */
+    .topbar{position:sticky;top:0;z-index:50;background:rgba(6,11,30,0.96);backdrop-filter:blur(16px);border-bottom:1px solid rgba(75,158,255,0.1);padding:12px 16px;display:flex;align-items:center;gap:12px;}
+    .topbar-back{width:36px;height:36px;border-radius:10px;background:rgba(75,158,255,0.08);border:1px solid rgba(75,158,255,0.18);color:var(--soft);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:.15s;}
+    .topbar-back:active{background:rgba(75,158,255,0.16);}
+    .topbar-title{font-size:17px;font-weight:700;letter-spacing:-0.3px;flex:1;color:var(--text);}
+    .admin-badge{font-size:10px;font-weight:700;background:linear-gradient(135deg,#4B9EFF,#60AFFF);color:#fff;padding:4px 10px;border-radius:8px;letter-spacing:1px;box-shadow:0 0 12px rgba(75,158,255,0.35);}
+    .topbar-refresh{width:34px;height:34px;border-radius:8px;background:rgba(75,158,255,0.08);border:1px solid rgba(75,158,255,0.18);color:var(--soft);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s;}
+    .topbar-refresh:active{background:rgba(75,158,255,0.16);}
+    .topbar-refresh svg{transition:transform 0.4s;}
+    .topbar-refresh.spinning svg{transform:rotate(360deg);}
+
+    /* Main scroll */
+    .main{flex:1;overflow-y:auto;padding:16px;padding-bottom:32px;display:flex;flex-direction:column;gap:16px;}
+
+    /* Access denied */
+    #access-denied{display:none;text-align:center;padding:60px 20px;}
+    #access-denied svg{color:var(--red);margin-bottom:16px;}
+    #access-denied h2{font-size:20px;font-weight:700;margin-bottom:8px;}
+    #access-denied p{color:var(--muted);font-size:14px;}
+
+    /* Loading */
+    #loading{display:flex;align-items:center;justify-content:center;padding:60px;gap:12px;color:var(--muted);}
+    .spin{animation:spin 0.8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Stats grid */
+    .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .stat-card{background:var(--card);border:1px solid rgba(75,158,255,0.13);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden;}
+    .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(75,158,255,0.3),transparent);}
+    .stat-icon{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;}
+    .stat-value{font-size:26px;font-weight:700;letter-spacing:-0.5px;color:#fff;}
+    .stat-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.6px;}
+    .stat-delta{font-size:11px;font-weight:600;}
+    .delta-up{color:var(--green);}
+    .delta-neutral{color:var(--muted);}
+
+    /* Section header */
+    .section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+    .section-title{font-size:15px;font-weight:700;color:var(--text);}
+    .section-count{font-size:12px;color:var(--muted);background:rgba(75,158,255,0.08);border:1px solid rgba(75,158,255,0.15);padding:2px 10px;border-radius:20px;}
+
+    /* Tabs */
+    .tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;}
+    .tabs::-webkit-scrollbar{display:none;}
+    .tab{flex-shrink:0;padding:7px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;border:1px solid rgba(75,158,255,0.15);background:rgba(75,158,255,0.05);color:var(--muted);}
+    .tab:hover{background:rgba(75,158,255,0.1);color:var(--soft);}
+    .tab.active{background:linear-gradient(135deg,#3B8FF0,#4B9EFF);color:#fff;border-color:transparent;box-shadow:0 2px 12px rgba(75,158,255,0.35);}
+
+    /* Order cards */
+    .orders-list{display:flex;flex-direction:column;gap:10px;}
+    .order-card{background:var(--card);border:1px solid rgba(75,158,255,0.12);border-radius:16px;overflow:hidden;transition:border-color 0.15s;}
+    .order-card:hover{border-color:rgba(75,158,255,0.25);}
+    .order-head{padding:14px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+    .order-channel{font-size:15px;font-weight:700;color:#fff;margin-bottom:2px;}
+    .order-pkg{font-size:12px;color:var(--muted);}
+    .order-meta{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 10px;border-top:1px solid rgba(75,158,255,0.08);margin-top:4px;padding-top:10px;}
+    .meta-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--soft);}
+    .meta-item svg{color:var(--muted);flex-shrink:0;}
+    .order-progress{padding:0 14px 12px;}
+    .progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+    .progress-label{font-size:11px;color:var(--muted);}
+    .progress-val{font-size:11px;font-weight:600;color:var(--blue);}
+    .progress-bar-bg{height:5px;background:rgba(75,158,255,0.1);border-radius:3px;overflow:hidden;}
+    .progress-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#3B8FF0,#60AFFF);transition:width 0.6s ease;}
+    .order-actions{padding:10px 14px 14px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid rgba(75,158,255,0.08);}
+
+    /* Status badges */
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.3px;}
+    .badge-pending{background:rgba(245,158,11,0.12);color:#F59E0B;border:1px solid rgba(245,158,11,0.2);}
+    .badge-active{background:rgba(34,197,94,0.12);color:#22C55E;border:1px solid rgba(34,197,94,0.2);}
+    .badge-completed{background:rgba(75,158,255,0.12);color:#60AFFF;border:1px solid rgba(75,158,255,0.2);}
+    .badge-cancelled{background:rgba(239,68,68,0.1);color:#F87171;border:1px solid rgba(239,68,68,0.18);}
+    .badge-payment_sent{background:rgba(139,92,246,0.12);color:#A78BFA;border:1px solid rgba(139,92,246,0.2);}
+
+    /* Action buttons */
+    .btn{padding:8px 14px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;border:none;display:flex;align-items:center;gap:5px;transition:all 0.15s;flex-shrink:0;}
+    .btn:active{opacity:0.75;transform:scale(0.97);}
+    /* ── TELES LIQUID GLASS: btn-primary — remove block to revert ── */
+    .btn-primary{background:rgba(59,143,240,0.72);backdrop-filter:blur(20px) saturate(200%) brightness(1.1);-webkit-backdrop-filter:blur(20px) saturate(200%) brightness(1.1);border:1px solid rgba(147,197,253,0.45);color:#fff;box-shadow:0 6px 22px rgba(75,158,255,0.28),inset 0 1.5px 0 rgba(255,255,255,0.26),inset 0 -1px 0 rgba(0,0,0,0.08);}
+    /* ── END TELES LIQUID GLASS ── */
+    .btn-green{background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.2);}
+    .btn-amber{background:rgba(245,158,11,0.12);color:var(--amber);border:1px solid rgba(245,158,11,0.2);}
+    .btn-red{background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.18);}
+    .btn-ghost{background:rgba(75,158,255,0.07);color:var(--soft);border:1px solid rgba(75,158,255,0.15);}
+    .btn:disabled{opacity:0.4;pointer-events:none;}
+
+    /* Empty state */
+    .empty{text-align:center;padding:40px 20px;color:var(--muted);}
+    .empty svg{margin-bottom:12px;opacity:0.4;}
+    .empty h3{font-size:15px;font-weight:600;color:var(--soft);margin-bottom:6px;}
+    .empty p{font-size:13px;}
+
+    /* Create order card */
+    .create-card{background:var(--card);border:1px solid rgba(75,158,255,0.12);border-radius:16px;overflow:hidden;}
+    .create-header{padding:14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+    .create-header-left{display:flex;align-items:center;gap:10px;}
+    .create-icon{width:32px;height:32px;background:linear-gradient(135deg,rgba(75,158,255,0.15),rgba(96,175,255,0.1));border-radius:10px;border:1px solid rgba(75,158,255,0.2);display:flex;align-items:center;justify-content:center;}
+    .create-body{padding:0 14px 14px;border-top:1px solid rgba(75,158,255,0.08);}
+    .form-row{margin-top:12px;}
+    .form-label{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:0.4px;}
+    .form-input,.form-select{width:100%;padding:10px 12px;background:rgba(75,158,255,0.05);border:1px solid rgba(75,158,255,0.15);border-radius:10px;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;-webkit-appearance:none;appearance:none;}
+    .form-input:focus,.form-select:focus{border-color:rgba(75,158,255,0.5);background:rgba(75,158,255,0.08);}
+    .form-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235A7AA8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+    .form-select option{background:#0C1430;}
+
+    /* Toast */
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#0C1A3A;border:1px solid rgba(75,158,255,0.35);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;color:#fff;transition:transform 0.25s ease;z-index:200;white-space:nowrap;pointer-events:none;}
+    #toast.show{transform:translateX(-50%) translateY(0);}
+    #toast.success{border-color:rgba(34,197,94,0.4);background:rgba(6,30,16,0.9);}
+    #toast.error{border-color:rgba(239,68,68,0.4);background:rgba(30,6,6,0.9);}
+
+    /* Divider */
+    .divider{height:1px;background:rgba(75,158,255,0.08);margin:4px 0;}
+
+    /* Invoices table */
+    .inv-table{background:var(--card);border:1px solid rgba(75,158,255,0.12);border-radius:16px;overflow:hidden;}
+    .inv-row{display:flex;align-items:center;padding:12px 14px;gap:10px;border-bottom:1px solid rgba(75,158,255,0.08);}
+    .inv-row:last-child{border-bottom:none;}
+    .inv-row-head{background:rgba(75,158,255,0.05);}
+    .inv-col{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;}
+    .inv-val{font-size:13px;font-weight:500;}
+    .inv-amount{font-size:13px;font-weight:700;color:var(--green);}
+
+    /* Collapse chevron */
+    .chevron{transition:transform 0.2s;color:var(--muted);}
+    .chevron.open{transform:rotate(180deg);}
+
+    /* Animations */
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .order-card{animation:fadeIn 0.3s ease both;}
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="history.back()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+  </button>
+  <span class="topbar-title">Admin Panel</span>
+  <span class="admin-badge">ADMIN</span>
+  <button class="topbar-refresh" onclick="window.location.href='admin-packages.html'" title="Package Members" style="margin-right:2px">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+  </button>
+  <button class="topbar-refresh" id="refreshBtn" onclick="loadAll()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+  </button>
+</div>
+
+<div class="main" id="mainContent">
+  <div id="loading">
+    <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+    Loading admin data…
+  </div>
+  <div id="access-denied">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
+    <h2>Access Denied</h2>
+    <p>This panel is only accessible to TELES ADS administrators.</p>
+  </div>
+  <div id="adminContent" style="display:none;display:flex;flex-direction:column;gap:16px;"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  var TG = window.Telegram && window.Telegram.WebApp;
+  if(TG) { TG.ready(); TG.expand(); }
+
+  var ADMIN_ID = 7049127887;
+  var BASE_HEADERS = { 'Content-Type': 'application/json', 'x-telegram-user-id': String(ADMIN_ID) };
+
+  /* Get user ID from Telegram WebApp or default to admin for standalone access */
+  var telegramUserId = 0;
+  try {
+    telegramUserId = parseInt((TG && TG.initDataUnsafe && TG.initDataUnsafe.user && TG.initDataUnsafe.user.id) || 0);
+  } catch(e){}
+
+  /* Send init data header if available */
+  if(TG && TG.initData) {
+    BASE_HEADERS['x-telegram-init-data'] = TG.initData;
+  }
+
+  var allOrders = [];
+  var allInvoices = [];
+  var currentTab = 'all';
+
+  function apiFetch(path, opts) {
+    return fetch(path, Object.assign({ headers: BASE_HEADERS }, opts || {}));
+  }
+
+  function showToast(msg, type) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'show ' + (type || '');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function(){ t.className = ''; }, 2800);
+  }
+
+  function fmt(n) { return Number(n||0).toLocaleString(); }
+  function fmtDate(s) {
+    if(!s) return '—';
+    var d = new Date(s);
+    return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  }
+  function statusBadge(st) {
+    var map = { pending:'badge-pending', active:'badge-active', completed:'badge-completed', cancelled:'badge-cancelled', payment_sent:'badge-payment_sent' };
+    var labels = { pending:'⏳ Pending', active:'🟢 Active', completed:'✅ Done', cancelled:'❌ Cancelled', payment_sent:'💳 Paid' };
+    return '<span class="badge '+(map[st]||'badge-pending')+'">'+(labels[st]||st)+'</span>';
+  }
+
+  function actionButtons(order) {
+    var btns = [];
+    if(order.status === 'pending') {
+      btns.push('<button class="btn btn-green" onclick="updateOrder('+order.id+',\'active\',this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Confirm Payment</button>');
+      btns.push('<button class="btn btn-red" onclick="updateOrder('+order.id+',\'cancelled\',this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Cancel</button>');
+    } else if(order.status === 'payment_sent') {
+      btns.push('<button class="btn btn-primary" onclick="updateOrder('+order.id+',\'active\',this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Approve & Start</button>');
+      btns.push('<button class="btn btn-red" onclick="updateOrder('+order.id+',\'cancelled\',this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>Reject</button>');
+    } else if(order.status === 'active') {
+      btns.push('<button class="btn btn-amber" onclick="updateDelivery('+order.id+',this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>Update Progress</button>');
+      btns.push('<button class="btn btn-green" onclick="updateOrder('+order.id+',\'completed\',this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Mark Complete</button>');
+    } else if(order.status === 'completed') {
+      btns.push('<span style="font-size:12px;color:var(--muted);padding:8px 0;display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Delivery Complete</span>');
+    }
+    return btns.join('');
+  }
+
+  window.updateOrder = function(id, status, btn) {
+    if(btn) btn.disabled = true;
+    apiFetch('/api/admin/campaigns/'+id, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: status })
+    }).then(function(r){ return r.json(); }).then(function(data){
+      if(data.campaign || data.ok !== false) {
+        showToast('Order #'+id+' updated to '+status, 'success');
+        /* Send receipt to advertiser when payment is approved */
+        if(status === 'active') {
+          var order = allOrders.find(function(o){ return o.id === id; });
+          if(order && order.telegramId) {
+            apiFetch('/api/admin/send-receipt', {
+              method: 'POST',
+              body: JSON.stringify({
+                telegramId:  order.telegramId,
+                orderId:     order.id,
+                packageName: order.packageName || 'N/A',
+                channelLink: order.channelLink  || 'N/A',
+                price:       order.price        || 0,
+                network:     order.network      || order.currency || 'USDT'
+              })
+            }).catch(function(){});
+          }
+        }
+        loadAll();
+      } else {
+        showToast(data.error || 'Update failed', 'error');
+        if(btn) btn.disabled = false;
+      }
+    }).catch(function(){
+      showToast('Network error', 'error');
+      if(btn) btn.disabled = false;
+    });
+  };
+
+  window.updateDelivery = function(id, btn) {
+    var order = allOrders.find(function(o){ return o.id === id; });
+    if(!order) return;
+    var current = order.membersDelivered || 0;
+    var target = order.membersTarget || 1000;
+    var input = window.prompt(
+      'Update delivery progress for order #'+id+'\nTarget: '+fmt(target)+' members\nCurrent: '+fmt(current)+' delivered\n\nEnter new delivered count:',
+      String(current)
+    );
+    if(input === null) return;
+    var newVal = parseInt(input.replace(/[^0-9]/g,''), 10);
+    if(isNaN(newVal) || newVal < 0){ showToast('Invalid number entered','error'); return; }
+    newVal = Math.min(newVal, target);
+    if(btn) btn.disabled = true;
+    apiFetch('/api/admin/campaigns/'+id, {
+      method: 'PATCH',
+      body: JSON.stringify({ membersDelivered: newVal, status: newVal >= target ? 'completed' : 'active' })
+    }).then(function(r){ return r.json(); }).then(function(data){
+      showToast('Progress updated: '+fmt(newVal)+' / '+fmt(target)+' members', 'success');
+      loadAll();
+    }).catch(function(){
+      showToast('Network error', 'error');
+      if(btn) btn.disabled = false;
+    });
+  };
+
+  function renderOrders() {
+    var filtered = allOrders.filter(function(o){
+      return currentTab === 'all' || o.status === currentTab;
+    });
+    var list = document.getElementById('ordersList');
+    if(!list) return;
+    if(!filtered.length) {
+      list.innerHTML = '<div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" ry="1"/></svg><h3>No orders yet</h3><p>Orders will appear here when users place campaigns.</p></div>';
+      return;
+    }
+    list.innerHTML = filtered.map(function(o, i){
+      var pct = o.membersTarget > 0 ? Math.min(Math.round((o.membersDelivered/o.membersTarget)*100), 100) : 0;
+      var txidHtml = '';
+      if(o.paymentProof) {
+        txidHtml = '<div style="margin:8px 14px;background:rgba(75,158,255,0.06);border:1px solid rgba(75,158,255,0.2);border-radius:12px;padding:10px 12px;">' +
+          '<div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">💳 Payment TXID</div>' +
+          '<div style="font-size:11px;font-family:monospace;color:var(--soft);word-break:break-all;line-height:1.5">'+o.paymentProof+'</div>' +
+          '<a href="https://tronscan.org/#/transaction/'+o.paymentProof+'" target="_blank" style="font-size:11px;color:var(--blue);font-weight:600;text-decoration:none;margin-top:4px;display:inline-block;">🔍 Verify on TronScan →</a>' +
+        '</div>';
+      }
+      var notesHtml = o.orderNotes ? '<div style="margin:0 14px 8px;font-size:11px;color:var(--muted);background:var(--card2);border-radius:8px;padding:7px 10px;border-left:3px solid var(--amber);">📝 '+o.orderNotes+'</div>' : '';
+      return '<div class="order-card" style="animation-delay:'+(i*0.04)+'s">' +
+        '<div class="order-head">' +
+          '<div>' +
+            '<div class="order-channel">'+(o.channelLink||'Unknown Channel')+'</div>' +
+            '<div class="order-pkg">'+(o.packageName||'Campaign')+'</div>' +
+          '</div>' +
+          statusBadge(o.status) +
+        '</div>' +
+        '<div class="order-meta">' +
+          '<span class="meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'+fmtDate(o.createdAt)+'</span>' +
+          '<span class="meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>$'+(o.price||0)+'</span>' +
+          '<span class="meta-item">🎯 '+(o.audience||'—')+'</span>' +
+          '<span class="meta-item">🌍 '+(o.targetCountry||'Worldwide')+'</span>' +
+          '<span class="meta-item">⚡ '+(o.deliverySpeed||'Standard')+'</span>' +
+          '<span class="meta-item" style="color:var(--green);font-weight:600;">👥 '+(fmt(o.membersDelivered||0))+' / '+fmt(o.membersTarget||0)+'</span>' +
+        '</div>' +
+        txidHtml +
+        notesHtml +
+        (o.status === 'active' || o.status === 'completed' ?
+          '<div class="order-progress">' +
+            '<div class="progress-row"><span class="progress-label">Delivery Progress</span><span class="progress-val">'+pct+'%</span></div>' +
+            '<div class="progress-bar-bg"><div class="progress-bar-fill" style="width:'+pct+'%"></div></div>' +
+          '</div>' : '') +
+        '<div class="order-actions">'+actionButtons(o)+'</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderStats() {
+    var total = allOrders.length;
+    var pending = allOrders.filter(function(o){ return o.status==='pending'||o.status==='payment_sent'; }).length;
+    var active = allOrders.filter(function(o){ return o.status==='active'; }).length;
+    var completed = allOrders.filter(function(o){ return o.status==='completed'; }).length;
+    var revenue = allOrders.reduce(function(sum,o){ return sum + (o.status==='completed'||o.status==='active' ? (o.price||0) : 0); }, 0);
+    var el = document.getElementById('statsGrid');
+    if(!el) return;
+    el.innerHTML =
+      '<div class="stat-card"><div class="stat-icon" style="background:rgba(75,158,255,0.12);border:1px solid rgba(75,158,255,0.2)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4B9EFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg></div><div class="stat-value">'+total+'</div><div class="stat-label">Total Orders</div></div>' +
+      '<div class="stat-card"><div class="stat-icon" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.2)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="stat-value">'+pending+'</div><div class="stat-label">Awaiting Action</div><div class="stat-delta '+(pending>0?'delta-up':'delta-neutral')+'">'+(pending>0?'⚠️ Needs review':'All clear')+'</div></div>' +
+      '<div class="stat-card"><div class="stat-icon" style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.2)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div><div class="stat-value">'+active+'</div><div class="stat-label">Running Now</div></div>' +
+      '<div class="stat-card"><div class="stat-icon" style="background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.2)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="stat-value">$'+fmt(revenue)+'</div><div class="stat-label">Revenue</div></div>';
+  }
+
+  function renderInvoices() {
+    var el = document.getElementById('invoicesBody');
+    if(!el) return;
+    if(!allInvoices.length) {
+      el.innerHTML = '<div class="empty" style="padding:24px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><h3 style="font-size:13px">No invoices yet</h3></div>';
+      return;
+    }
+    el.innerHTML = allInvoices.slice(0,20).map(function(inv){
+      return '<div class="inv-row">' +
+        '<div style="flex:1"><div class="inv-val">'+(inv.description||'Invoice #'+inv.id)+'</div><div style="font-size:11px;color:var(--muted)">'+(fmtDate(inv.createdAt))+'</div></div>' +
+        '<div style="margin-right:12px">'+statusBadge(inv.status||'pending')+'</div>' +
+        '<div class="inv-amount">$'+(inv.amount||0)+'</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function buildAdminContent() {
+    var c = document.getElementById('adminContent');
+    c.style.display = 'flex';
+    c.style.flexDirection = 'column';
+    c.style.gap = '16px';
+    c.innerHTML =
+      /* Stats */
+      '<div>' +
+        '<div class="section-hd"><span class="section-title">📊 Overview</span></div>' +
+        '<div class="stats-grid" id="statsGrid"></div>' +
+      '</div>' +
+
+      /* Orders */
+      '<div>' +
+        '<div class="section-hd"><span class="section-title">📋 Order Management</span><span class="section-count" id="orderCount">0 orders</span></div>' +
+        '<div class="tabs" id="tabs">' +
+          '<div class="tab active" data-tab="all">All</div>' +
+          '<div class="tab" data-tab="pending">Pending</div>' +
+          '<div class="tab" data-tab="payment_sent">Paid</div>' +
+          '<div class="tab" data-tab="active">Active</div>' +
+          '<div class="tab" data-tab="completed">Completed</div>' +
+          '<div class="tab" data-tab="cancelled">Cancelled</div>' +
+        '</div>' +
+        '<div class="orders-list" id="ordersList" style="margin-top:12px"></div>' +
+      '</div>' +
+
+      /* Create order */
+      '<div class="create-card" id="createCard">' +
+        '<div class="create-header" onclick="toggleCreate()">' +
+          '<div class="create-header-left">' +
+            '<div class="create-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4B9EFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>' +
+            '<span style="font-weight:700;font-size:14px">Create Test Order</span>' +
+          '</div>' +
+          '<svg class="chevron" id="createChevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>' +
+        '</div>' +
+        '<div class="create-body" id="createBody" style="display:none">' +
+          '<div class="form-row"><label class="form-label">Channel Link</label><input class="form-input" id="newChannel" placeholder="@YourChannel or t.me/channel" /></div>' +
+          '<div class="form-row"><label class="form-label">Audience</label><select class="form-select" id="newAudience"><option value="crypto">Crypto</option><option value="forex">Forex</option><option value="binary">Binary</option></select></div>' +
+          '<div class="form-row"><label class="form-label">Package</label><select class="form-select" id="newPackage"><option value="1">Affordable Package — $99</option><option value="2" selected>Premium Package — $199</option><option value="3">Recommended Package — $399</option><option value="4">Luxury Package — $599</option></select></div>' +
+          '<div class="form-row" style="margin-top:16px"><button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="createTestOrder(this)">Create Order</button></div>' +
+        '</div>' +
+      '</div>' +
+
+      /* Promo Codes */
+      '<div>' +
+        '<div class="section-hd"><span class="section-title">🎟️ Promo Codes</span><button class="btn btn-primary" style="padding:6px 14px;font-size:12px" onclick="window.location.href=\'promo-codes.html\'">Manage →</button></div>' +
+        '<div id="promoCodesBody" style="margin-top:8px"></div>' +
+      '</div>' +
+
+      /* Invoices */
+      '<div>' +
+        '<div class="section-hd"><span class="section-title">💳 Recent Invoices</span><span class="section-count" id="invCount">0 invoices</span></div>' +
+        '<div class="inv-table"><div id="invoicesBody"></div></div>' +
+      '</div>';
+
+    /* Tab click handlers */
+    document.getElementById('tabs').addEventListener('click', function(e) {
+      var tab = e.target.closest('[data-tab]');
+      if(!tab) return;
+      currentTab = tab.dataset.tab;
+      document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+      tab.classList.add('active');
+      renderOrders();
+    });
+
+    renderStats();
+    renderOrders();
+    renderInvoices();
+    document.getElementById('orderCount').textContent = allOrders.length + ' order' + (allOrders.length !== 1 ? 's' : '');
+    document.getElementById('invCount').textContent = allInvoices.length + ' invoice' + (allInvoices.length !== 1 ? 's' : '');
+  }
+
+  window.toggleCreate = function() {
+    var body = document.getElementById('createBody');
+    var ch = document.getElementById('createChevron');
+    var open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    ch.classList.toggle('open', !open);
+  };
+
+  window.createTestOrder = function(btn) {
+    var channel = document.getElementById('newChannel').value.trim();
+    var audience = document.getElementById('newAudience').value;
+    var packageId = parseInt(document.getElementById('newPackage').value);
+    if(!channel) { showToast('Enter a channel link', 'error'); return; }
+    btn.disabled = true;
+    btn.textContent = 'Creating…';
+    apiFetch('/api/campaigns', {
+      method: 'POST',
+      body: JSON.stringify({ packageId: packageId, channelLink: channel, audience: audience })
+    }).then(function(r){ return r.json(); }).then(function(data){
+      if(data.campaign || data.id) {
+        showToast('✅ Order created successfully!', 'success');
+        document.getElementById('newChannel').value = '';
+        loadAll();
+        toggleCreate();
+      } else {
+        showToast(data.error || 'Could not create order', 'error');
+        btn.disabled = false; btn.textContent = 'Create Order';
+      }
+    }).catch(function(){
+      showToast('Network error', 'error');
+      btn.disabled = false; btn.textContent = 'Create Order';
+    });
+  };
+
+  function loadAll() {
+    var rb = document.getElementById('refreshBtn');
+    if(rb) { rb.classList.add('spinning'); setTimeout(function(){ rb.classList.remove('spinning'); }, 600); }
+    Promise.all([
+      apiFetch('/api/admin/campaigns').then(function(r){ return r.json(); }),
+      apiFetch('/api/admin/invoices').then(function(r){ return r.json(); })
+    ]).then(function(results) {
+      var campaignsData = results[0];
+      var invoicesData = results[1];
+
+      if(campaignsData.error && campaignsData.error.includes('Access denied')) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('access-denied').style.display = 'block';
+        return;
+      }
+
+      allOrders = (campaignsData.campaigns || []).sort(function(a,b){
+        return new Date(b.createdAt||0) - new Date(a.createdAt||0);
+      });
+      allInvoices = (invoicesData.invoices || []).sort(function(a,b){
+        return new Date(b.createdAt||0) - new Date(a.createdAt||0);
+      });
+
+      document.getElementById('loading').style.display = 'none';
+      buildAdminContent();
+    }).catch(function(err) {
+      document.getElementById('loading').innerHTML = '<div style="text-align:center;color:var(--red)"><p>Failed to load data. <button class="btn btn-ghost" onclick="loadAll()" style="margin-top:8px">Retry</button></p></div>';
+    });
+  }
+
+  /* ── Promo Codes Summary ───────────────────────────────────────────── */
+  function loadPromoCodes() {
+    apiFetch('/api/admin/promo-codes').then(function(r){ return r.json(); }).then(function(data){
+      renderPromoCodes(data.codes || []);
+    }).catch(function(){});
+  }
+
+  function getCodeStatus(c) {
+    if(!c.is_active) return 'inactive';
+    var now = new Date();
+    if(c.valid_until && new Date(c.valid_until) < now) return 'expired';
+    if(c.valid_from && new Date(c.valid_from) > now) return 'scheduled';
+    return 'active';
+  }
+
+  function renderPromoCodes(codes) {
+    var el = document.getElementById('promoCodesBody');
+    if(!el) return;
+    var active = codes.filter(function(c){ return getCodeStatus(c)==='active'; });
+    var totalUses = codes.reduce(function(a,c){ return a+(c.uses_count||0); },0);
+    var html = '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden">';
+    if(!codes.length) {
+      html += '<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px">No promo codes yet. <a href="promo-codes.html" style="color:var(--blue)">Create one →</a></div>';
+    } else {
+      // Stats row
+      html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid var(--border)">' +
+        '<div style="padding:12px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:18px;font-weight:700;color:var(--blue)">'+codes.length+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">TOTAL</div></div>' +
+        '<div style="padding:12px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:18px;font-weight:700;color:var(--green)">'+active.length+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">ACTIVE</div></div>' +
+        '<div style="padding:12px;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--yellow)">'+totalUses+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">USES</div></div>' +
+      '</div>';
+      // Active codes preview (max 3)
+      var preview = codes.slice(0,3);
+      preview.forEach(function(c,i){
+        var s = getCodeStatus(c);
+        var clr = s==='active'?'var(--green)':s==='expired'?'var(--red)':'var(--muted)';
+        var border = i < preview.length-1 ? 'border-bottom:1px solid var(--border);' : '';
+        html += '<div style="'+border+'padding:10px 14px;display:flex;align-items:center;gap:10px">' +
+          '<span style="font-family:monospace;font-weight:700;font-size:13px;color:'+clr+';flex:1">'+c.code+'</span>' +
+          '<span style="font-size:11px;font-weight:700;background:rgba(59,130,246,0.12);color:var(--blue);padding:2px 7px;border-radius:6px">'+c.discount_pct+'%</span>' +
+          '<span style="font-size:11px;color:var(--muted)">'+c.uses_count+(c.max_uses?'/'+c.max_uses:'')+' uses</span>' +
+        '</div>';
+      });
+      if(codes.length > 3) {
+        html += '<div style="padding:8px 14px;font-size:12px;color:var(--muted);border-top:1px solid var(--border)">+' + (codes.length-3) + ' more codes</div>';
+      }
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  }
+
+  /* Boot */
+  loadAll();
+  loadPromoCodes();
+})();
+</script>
+</body>
+</html>

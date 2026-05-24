@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+  <title>Compare Packages · TELES ADS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      min-height: 100dvh; background: #f0f4ff;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #1e293b; -webkit-font-smoothing: antialiased;
+    }
+    .shell { max-width: 430px; width: 100%; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+
+    /* Header */
+    .header { padding: 14px 16px 10px; display: flex; align-items: center; gap: 12px; }
+    .back-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.28); border: 1.5px solid rgba(255,255,255,0.72);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(32px) saturate(200%); -webkit-backdrop-filter: blur(32px) saturate(200%);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06), inset 0 1.5px 0 rgba(255,255,255,0.9);
+      flex-shrink: 0;
+    }
+    .page-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+    .page-sub { font-size: 12px; color: #64748b; margin-top: 1px; }
+
+    /* Hero intro */
+    .intro {
+      margin: 0 16px 16px;
+      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+      border-radius: 20px; padding: 18px 20px; color: #fff;
+    }
+    .intro-title { font-size: 17px; font-weight: 800; margin-bottom: 4px; }
+    .intro-sub { font-size: 12px; opacity: 0.85; line-height: 1.5; }
+
+    /* Scroll area */
+    .scroll { flex: 1; overflow-y: auto; padding: 0 0 100px; }
+
+    /* Table wrapper — horizontal scroll */
+    .table-wrap {
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      padding: 0 16px 16px; scroll-snap-type: x mandatory;
+    }
+    .table-wrap::-webkit-scrollbar { display: none; }
+
+    /* Grid: first col = feature labels, rest = packages */
+    .cmp-grid {
+      display: grid;
+      grid-template-columns: 110px repeat(6, 130px);
+      gap: 0;
+      min-width: max-content;
+    }
+
+    /* Package header cells */
+    .pkg-head {
+      background: #fff; border-radius: 20px 20px 0 0;
+      padding: 14px 10px 12px;
+      text-align: center; margin: 0 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      scroll-snap-align: start;
+      position: relative;
+      border-bottom: 2px solid #f1f5f9;
+    }
+    .pkg-head.popular {
+      background: linear-gradient(160deg, #eff6ff 0%, #f0fdf4 100%);
+      border-bottom: 2px solid #2563eb;
+    }
+    .popular-badge {
+      position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      color: #fff; font-size: 9px; font-weight: 700;
+      padding: 3px 10px; border-radius: 999px; white-space: nowrap;
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .pkg-name-cell { font-size: 13px; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+    .pkg-members-cell { font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 6px; }
+    .pkg-price-cell { font-size: 22px; font-weight: 800; color: #2563eb; line-height: 1; }
+    .pkg-price-cell.popular-price { color: #2563eb; }
+    .pkg-orig-cell {
+      font-size: 11px; color: #94a3b8; text-decoration: line-through;
+      margin-bottom: 2px;
+    }
+    .pkg-ppm { font-size: 10px; color: #10b981; font-weight: 700; margin-top: 3px; }
+
+    /* Feature label column */
+    .feat-head {
+      background: #f8fafc; border-radius: 20px 0 0 0;
+      padding: 14px 10px 12px; display: flex; align-items: flex-end;
+      font-size: 10px; font-weight: 700; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+
+    /* Feature rows */
+    .feat-label {
+      background: #f8fafc; padding: 11px 10px;
+      font-size: 11px; font-weight: 600; color: #475569;
+      display: flex; align-items: center;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .feat-label:last-of-type { border-bottom: none; }
+
+    .feat-cell {
+      background: #fff; padding: 11px 10px;
+      text-align: center; margin: 0 4px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+    }
+    .feat-cell.popular { background: #fafbff; }
+    .feat-cell:last-child { border-bottom: none; }
+
+    .check { color: #10b981; font-size: 16px; font-weight: 700; }
+    .cross { color: #e2e8f0; font-size: 15px; }
+    .feat-text { font-size: 11px; font-weight: 600; color: #475569; }
+
+    /* Bottom row — order buttons */
+    .order-row { background: #f8fafc; padding: 12px 0 0; }
+    .order-label { background: #f8fafc; padding: 12px 10px 0; }
+    .order-cell {
+      background: #f8fafc; padding: 10px 4px 0;
+      display: flex; align-items: flex-start; justify-content: center;
+    }
+    .order-btn {
+      width: 100%; padding: 10px 6px;
+      border-radius: 12px; border: none; cursor: pointer;
+      font-size: 12px; font-weight: 700; font-family: inherit;
+      background: #2563eb; color: #fff;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.25);
+      transition: background .15s; -webkit-tap-highlight-color: transparent;
+    }
+    .order-btn:active { background: #1d4ed8; }
+    .order-btn.popular-btn {
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      box-shadow: 0 4px 14px rgba(37,99,235,0.35);
+    }
+
+    /* Savings banner */
+    .savings-banner {
+      margin: 0 16px 14px;
+      background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(37,99,235,0.06));
+      border: 1.5px solid rgba(16,185,129,0.25);
+      border-radius: 16px; padding: 12px 14px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .savings-icon { font-size: 22px; flex-shrink: 0; }
+    .savings-text { font-size: 12px; color: #1e293b; line-height: 1.5; }
+    .savings-text strong { color: #10b981; }
+
+    /* Feature legend */
+    .legend {
+      margin: 0 16px 20px;
+      background: #fff; border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+    }
+    .legend-title { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
+    .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 12px; color: #475569; }
+    .legend-row:last-child { margin-bottom: 0; }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <div class="header">
+    <button class="back-btn" onclick="history.back()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+        <path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>
+      </svg>
+    </button>
+    <div>
+      <div class="page-title">Compare Packages</div>
+      <div class="page-sub">Find the best fit for your channel</div>
+    </div>
+  </div>
+
+  <div class="scroll">
+    <div class="intro">
+      <div class="intro-title">All plans include real subscribers</div>
+      <div class="intro-sub">100% Forex, Crypto &amp; Binary niche targeting. No bots, no fakes — or we replace them free.</div>
+    </div>
+
+    <div class="savings-banner">
+      <div class="savings-icon">💡</div>
+      <div class="savings-text">Scroll right to compare all 6 packages. <strong>Bigger plans = lower cost per member</strong> — VIP is 47% cheaper per member than Starter.</div>
+    </div>
+
+    <!-- Comparison table -->
+    <div class="table-wrap">
+      <div class="cmp-grid" id="cmpGrid">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+
+    <!-- Feature legend -->
+    <div class="legend">
+      <div class="legend-title">What's included</div>
+      <div class="legend-row"><span style="color:#10b981;font-weight:700;font-size:15px">✓</span> Included in this plan</div>
+      <div class="legend-row"><span style="color:#e2e8f0;font-weight:700;font-size:15px">—</span> Not included in this plan</div>
+      <div class="legend-row"><span style="font-size:13px">⚡</span> Express = priority queue, delivery starts within 2h</div>
+      <div class="legend-row"><span style="font-size:13px">🔄</span> Replacement guarantee = free top-up if members drop within 30 days</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var PACKAGES = null;
+
+  var FEATURES = [
+    { key: 'targeting',    label: 'Niche Targeting'    },
+    { key: 'priority',     label: 'Priority Support'   },
+    { key: 'replacement',  label: '🔄 Replacement'      },
+    { key: 'manager',      label: 'Personal Manager'   },
+    { key: 'express',      label: '⚡ Express Delivery' },
+    { key: 'reboost',      label: 'Re-engagement Boost'},
+  ];
+
+  function featureMap(pkg) {
+    var n = (pkg.name || '').toLowerCase();
+    var f = (pkg.features || []).map(function(s){ return s.toLowerCase(); });
+    var has = function(kw) { return f.some(function(s){ return s.indexOf(kw) !== -1; }); };
+    return {
+      targeting:   true,
+      priority:    has('priority') || has('vip') || has('24/7'),
+      replacement: has('replacement'),
+      manager:     has('personal manager'),
+      express:     has('express'),
+      reboost:     has('re-engagement'),
+    };
+  }
+
+  function ppm(pkg) {
+    var members = parseInt((pkg.members || '0').replace(/[^\d]/g,'')) || 1;
+    var rate = pkg.price / members;
+    return rate < 0.01 ? '$' + rate.toFixed(4) : '$' + rate.toFixed(3);
+  }
+
+  function buildGrid(packages) {
+    var grid = document.getElementById('cmpGrid');
+
+    /* — top-left empty corner — */
+    var corner = document.createElement('div');
+    corner.className = 'feat-head';
+    corner.textContent = 'Feature';
+    grid.appendChild(corner);
+
+    /* — package header cells — */
+    packages.forEach(function(pkg) {
+      var cell = document.createElement('div');
+      cell.className = 'pkg-head' + (pkg.popular ? ' popular' : '');
+      var savings = Math.round((1 - pkg.price / pkg.originalPrice) * 100);
+      cell.innerHTML =
+        (pkg.popular ? '<div class="popular-badge">⭐ Best Seller</div>' : '') +
+        '<div class="pkg-name-cell">' + pkg.name + '</div>' +
+        '<div class="pkg-members-cell">' + pkg.members + '</div>' +
+        '<div class="pkg-orig-cell">$' + pkg.originalPrice + '</div>' +
+        '<div class="pkg-price-cell' + (pkg.popular ? ' popular-price' : '') + '">$' + pkg.price + '</div>' +
+        '<div class="pkg-ppm">' + ppm(pkg) + '/member</div>';
+      grid.appendChild(cell);
+    });
+
+    /* — feature rows — */
+    FEATURES.forEach(function(feat) {
+      /* label cell */
+      var lbl = document.createElement('div');
+      lbl.className = 'feat-label';
+      lbl.textContent = feat.label;
+      grid.appendChild(lbl);
+
+      packages.forEach(function(pkg) {
+        var map = featureMap(pkg);
+        var has = map[feat.key];
+        var cell = document.createElement('div');
+        cell.className = 'feat-cell' + (pkg.popular ? ' popular' : '');
+        cell.innerHTML = has
+          ? '<span class="check">✓</span>'
+          : '<span class="cross">—</span>';
+        grid.appendChild(cell);
+      });
+    });
+
+    /* — delivery row — */
+    var delivLabel = document.createElement('div');
+    delivLabel.className = 'feat-label';
+    delivLabel.textContent = 'Delivery Time';
+    grid.appendChild(delivLabel);
+
+    packages.forEach(function(pkg) {
+      var f = (pkg.features || []);
+      var deliv = '—';
+      f.forEach(function(s) {
+        if (s.toLowerCase().indexOf('delivery') !== -1 || s.toLowerCase().indexOf('express') !== -1) deliv = s.replace(/delivery in /i,'').replace(/delivery/i,'').trim() || 'Express';
+      });
+      var cell = document.createElement('div');
+      cell.className = 'feat-cell' + (pkg.popular ? ' popular' : '');
+      cell.innerHTML = '<span class="feat-text">' + deliv + '</span>';
+      grid.appendChild(cell);
+    });
+
+    /* — order button row — */
+    var orderLbl = document.createElement('div');
+    orderLbl.className = 'order-label';
+    grid.appendChild(orderLbl);
+
+    packages.forEach(function(pkg) {
+      var cell = document.createElement('div');
+      cell.className = 'order-cell';
+      var btn = document.createElement('button');
+      btn.className = 'order-btn' + (pkg.popular ? ' popular-btn' : '');
+      btn.textContent = pkg.popular ? '⭐ Order' : 'Order';
+      btn.onclick = function() {
+        window.location.href = '/place-order.html?pkg=' + pkg.id;
+      };
+      cell.appendChild(btn);
+      grid.appendChild(cell);
+    });
+  }
+
+  function load() {
+    fetch('/api/packages')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        PACKAGES = d.packages || [];
+        buildGrid(PACKAGES);
+      })
+      .catch(function() {
+        document.getElementById('cmpGrid').innerHTML =
+          '<div style="padding:40px 16px;text-align:center;color:#64748b;grid-column:1/-1">Failed to load packages. Please go back and try again.</div>';
+      });
+  }
+
+  load();
+
+  /* Telegram theme */
+  try {
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (tg) { tg.setHeaderColor && tg.setHeaderColor('bg_color'); tg.expand && tg.expand(); }
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>

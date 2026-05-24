@@ -1,0 +1,20 @@
+{
+  "name": "@workspace/teles-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TELES ADS – Telegram Mini App SaaS for Forex/Crypto/Binary channel growth",
+  "scripts": {
+    "dev": "node server.cjs",
+    "start": "node server.cjs",
+    "build": "echo 'no build needed (prebuilt frontend in public/)'",
+    "setup-db": "node setup-db.js",
+    "setup-webhook": "node setup-webhook.js"
+  },
+  "dependencies": {
+    "pdfkit": "^0.18.0",
+    "pg": "^8.13.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

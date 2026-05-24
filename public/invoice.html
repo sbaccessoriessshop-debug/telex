@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+  <title>Invoice · TELES ADS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      min-height: 100dvh; background: #f0f4ff;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #1e293b; -webkit-font-smoothing: antialiased;
+    }
+    .shell { max-width: 430px; width: 100%; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+
+    .header { padding: 14px 16px 10px; display: flex; align-items: center; gap: 12px; }
+    .back-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.28); border: 1.5px solid rgba(255,255,255,0.72);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(32px) saturate(200%); -webkit-backdrop-filter: blur(32px) saturate(200%);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06), inset 0 1.5px 0 rgba(255,255,255,0.9);
+      flex-shrink: 0;
+    }
+    .page-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+    .page-sub   { font-size: 12px; color: #64748b; margin-top: 1px; }
+
+    .scroll { flex: 1; overflow-y: auto; padding: 0 16px 120px; }
+
+    /* Invoice preview card */
+    .inv-card {
+      background: #fff; border-radius: 24px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+      overflow: hidden; margin-bottom: 16px;
+    }
+
+    /* Brand header stripe */
+    .inv-header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #7c3aed 100%);
+      padding: 22px 22px 20px;
+      display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .inv-brand { color: #fff; }
+    .inv-brand-name { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+    .inv-brand-sub  { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+    .inv-badge {
+      background: rgba(255,255,255,0.18);
+      border: 1.5px solid rgba(255,255,255,0.35);
+      border-radius: 12px; padding: 6px 12px;
+      text-align: right;
+    }
+    .inv-badge-label { font-size: 9px; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.08em; }
+    .inv-badge-num   { font-size: 15px; font-weight: 800; color: #fff; margin-top: 1px; font-variant-numeric: tabular-nums; }
+
+    /* Body */
+    .inv-body { padding: 20px 22px; }
+
+    /* Status pill */
+    .inv-status {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; margin-bottom: 18px;
+    }
+    .inv-status.pending  { background: rgba(245,158,11,0.1);  color: #d97706; }
+    .inv-status.paid     { background: rgba(16,185,129,0.1);   color: #059669; }
+    .inv-status.active   { background: rgba(37,99,235,0.08);   color: #2563eb; }
+    .inv-status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+    /* Section title */
+    .inv-section { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin: 16px 0 8px; }
+
+    /* Info grid */
+    .inv-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .inv-info-cell {}
+    .inv-info-label { font-size: 10px; color: #94a3b8; font-weight: 600; margin-bottom: 2px; }
+    .inv-info-val   { font-size: 13px; font-weight: 700; color: #1e293b; }
+
+    /* Line items */
+    .inv-divider { height: 1px; background: #f1f5f9; margin: 14px 0; }
+    .inv-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid #f8fafc;
+    }
+    .inv-row:last-child { border-bottom: none; }
+    .inv-row-label { font-size: 13px; color: #475569; }
+    .inv-row-val   { font-size: 13px; font-weight: 700; color: #1e293b; }
+    .inv-total-row {
+      display: flex; justify-content: space-between; align-items: center;
+      background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+      border-radius: 14px; padding: 14px 16px; margin-top: 10px;
+    }
+    .inv-total-label { font-size: 14px; font-weight: 700; color: #1e293b; }
+    .inv-total-val   { font-size: 22px; font-weight: 800; color: #2563eb; }
+
+    /* Footer note */
+    .inv-footer {
+      background: #f8fafc; padding: 14px 22px;
+      font-size: 11px; color: #94a3b8; text-align: center; line-height: 1.5;
+    }
+
+    /* Buttons */
+    .btn-row { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+    .dl-btn {
+      width: 100%; padding: 16px; border: none; border-radius: 18px;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      color: #fff; font-size: 15px; font-weight: 700; font-family: inherit;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 4px 14px rgba(37,99,235,0.35);
+      -webkit-tap-highlight-color: transparent; transition: opacity .15s;
+    }
+    .dl-btn:active { opacity: 0.88; }
+    .share-btn {
+      width: 100%; padding: 14px; border-radius: 18px;
+      background: #fff; border: 1.5px solid #e2e8f0;
+      color: #1e293b; font-size: 14px; font-weight: 600; font-family: inherit;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+      -webkit-tap-highlight-color: transparent; transition: background .15s;
+    }
+    .share-btn:active { background: #f8fafc; }
+
+    /* Loading state */
+    .loading-state { text-align: center; padding: 60px 20px; color: #94a3b8; font-size: 14px; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #1e293b; color: #fff; font-size: 13px; font-weight: 600;
+      padding: 10px 20px; border-radius: 999px; opacity: 0;
+      transition: all .3s ease; pointer-events: none; white-space: nowrap; z-index: 999;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <div class="header">
+    <button class="back-btn" onclick="history.back()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+        <path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>
+      </svg>
+    </button>
+    <div>
+      <div class="page-title">Invoice</div>
+      <div class="page-sub">Download or share your receipt</div>
+    </div>
+  </div>
+
+  <div class="scroll">
+    <div id="invContent" class="loading-state">Loading invoice…</div>
+
+    <div class="btn-row" id="btnRow" style="display:none">
+      <button class="dl-btn" onclick="downloadPDF()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download PDF Invoice
+      </button>
+      <button class="share-btn" onclick="shareInvoice()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        Share via Telegram
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var inv      = params.get('inv')      || 'TA-0000';
+  var pkg      = params.get('pkg')      || 'Package';
+  var members  = params.get('members')  || '—';
+  var price    = parseFloat(params.get('price') || '0');
+  var channel  = params.get('channel')  || '—';
+  var audience = params.get('audience') || '—';
+  var speed    = params.get('speed')    || 'Standard';
+  var discount = parseInt(params.get('discount') || '0');
+  var status   = params.get('status')   || 'pending';
+  var userName = params.get('name')     || 'Valued Customer';
+  var userId   = params.get('uid')      || '';
+
+  /* try to get user from Telegram context */
+  try {
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (tg) {
+      tg.setHeaderColor && tg.setHeaderColor('bg_color');
+      tg.expand && tg.expand();
+      var u = tg.initDataUnsafe && tg.initDataUnsafe.user;
+      if (u && u.first_name) { userName = u.first_name + (u.last_name ? ' ' + u.last_name : ''); userId = String(u.id); }
+    }
+  } catch(e) {}
+
+  var now     = new Date();
+  var dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  var dueStr  = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  var origPrice  = discount > 0 ? Math.round(price / (1 - discount / 100) * 100) / 100 : price;
+  var discAmount = discount > 0 ? Math.round((origPrice - price) * 100) / 100 : 0;
+
+  var statusLabel = status === 'paid' ? 'Paid' : status === 'active' ? 'Active' : 'Payment Pending';
+  var statusClass = status === 'paid' ? 'paid' : status === 'active' ? 'active' : 'pending';
+
+  function renderInvoice() {
+    var discountRow = discount > 0
+      ? '<div class="inv-row"><span class="inv-row-label">Discount (' + discount + '% off)</span><span class="inv-row-val" style="color:#10b981">-$' + discAmount.toFixed(2) + '</span></div>'
+      : '';
+
+    document.getElementById('invContent').outerHTML =
+      '<div id="invContent">' +
+      '<div class="inv-card" id="invPreview">' +
+
+        /* header stripe */
+        '<div class="inv-header">' +
+          '<div class="inv-brand">' +
+            '<div class="inv-brand-name">TELES ADS</div>' +
+            '<div class="inv-brand-sub">@telesads · Forex/Crypto Advertising</div>' +
+          '</div>' +
+          '<div class="inv-badge">' +
+            '<div class="inv-badge-label">Invoice</div>' +
+            '<div class="inv-badge-num">' + inv + '</div>' +
+          '</div>' +
+        '</div>' +
+
+        /* body */
+        '<div class="inv-body">' +
+          '<div class="inv-status ' + statusClass + '"><div class="inv-status-dot"></div>' + statusLabel + '</div>' +
+
+          '<div class="inv-section">Invoice Details</div>' +
+          '<div class="inv-info-grid">' +
+            '<div class="inv-info-cell"><div class="inv-info-label">Date Issued</div><div class="inv-info-val">' + dateStr + '</div></div>' +
+            '<div class="inv-info-cell"><div class="inv-info-label">Due Date</div><div class="inv-info-val">' + (status === 'paid' ? 'Paid' : dueStr) + '</div></div>' +
+            '<div class="inv-info-cell"><div class="inv-info-label">Billed To</div><div class="inv-info-val">' + userName + '</div></div>' +
+            '<div class="inv-info-cell"><div class="inv-info-label">Telegram ID</div><div class="inv-info-val" style="font-family:monospace;font-size:12px">' + (userId || '—') + '</div></div>' +
+          '</div>' +
+
+          '<div class="inv-section">Campaign Details</div>' +
+          '<div class="inv-info-grid">' +
+            '<div class="inv-info-cell"><div class="inv-info-label">Package</div><div class="inv-info-val">' + pkg + '</div></div>' +
+            '<div class="inv-info-cell"><div class="inv-info-label">Members</div><div class="inv-info-val">' + members + '</div></div>' +
+            '<div class="inv-info-cell"><div class="inv-info-label">Channel</div><div class="inv-info-val" style="font-size:12px;word-break:break-all">' + channel + '</div></div>' +
+            '<div class="inv-info-cell"><div class="inv-info-label">Audience</div><div class="inv-info-val">' + audience + '</div></div>' +
+          '</div>' +
+
+          '<div class="inv-divider"></div>' +
+
+          /* line items */
+          '<div class="inv-row"><span class="inv-row-label">' + pkg + ' Plan — ' + members + '</span><span class="inv-row-val">$' + origPrice.toFixed(2) + '</span></div>' +
+          discountRow +
+          '<div class="inv-row"><span class="inv-row-label">Delivery Speed</span><span class="inv-row-val">' + speed + '</span></div>' +
+          '<div class="inv-row"><span class="inv-row-label">Payment Method</span><span class="inv-row-val">USDT (TRC-20)</span></div>' +
+
+          '<div class="inv-total-row">' +
+            '<span class="inv-total-label">Total Paid</span>' +
+            '<span class="inv-total-val">$' + price.toFixed(2) + '</span>' +
+          '</div>' +
+        '</div>' +
+
+        /* footer */
+        '<div class="inv-footer">Thank you for choosing TELES ADS.<br>Questions? Contact @telesads on Telegram.</div>' +
+      '</div>' +
+      '</div>';
+
+    document.getElementById('btnRow').style.display = 'flex';
+  }
+
+  /* ── Generate and download PDF ───────────────────────── */
+  window.downloadPDF = function() {
+    try {
+      var jsPDF = window.jspdf.jsPDF;
+      var doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      var W = 210, margin = 18;
+      var y = 0;
+
+      /* gradient header bar */
+      doc.setFillColor(30, 58, 138);
+      doc.rect(0, 0, W, 42, 'F');
+      doc.setFillColor(37, 99, 235);
+      doc.rect(W * 0.3, 0, W * 0.7, 42, 'F');
+
+      /* brand name */
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.setTextColor(255, 255, 255);
+      doc.text('TELES ADS', margin, 18);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(200, 220, 255);
+      doc.text('@telesads  ·  Forex / Crypto / Binary Advertising', margin, 26);
+
+      /* invoice number box */
+      doc.setFillColor(255, 255, 255, 0.18);
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(W - margin - 46, 10, 46, 22, 3, 3, 'S');
+      doc.setFontSize(8);
+      doc.setTextColor(200, 220, 255);
+      doc.text('INVOICE', W - margin - 23, 17, { align: 'center' });
+      doc.setFontSize(13);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text(inv, W - margin - 23, 26, { align: 'center' });
+
+      y = 52;
+
+      /* status pill */
+      var pillColor = status === 'paid' ? [16, 185, 129] : status === 'active' ? [37, 99, 235] : [245, 158, 11];
+      doc.setFillColor(pillColor[0], pillColor[1], pillColor[2]);
+      doc.roundedRect(margin, y - 5, 38, 8, 2, 2, 'F');
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text(statusLabel.toUpperCase(), margin + 19, y + 0.5, { align: 'center' });
+
+      y += 14;
+
+      /* section helper */
+      function section(title) {
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(148, 163, 184);
+        doc.text(title.toUpperCase(), margin, y);
+        y += 5;
+        doc.setDrawColor(241, 245, 249);
+        doc.setLineWidth(0.4);
+        doc.line(margin, y, W - margin, y);
+        y += 4;
+      }
+
+      /* row helper */
+      function infoRow(label, value, right) {
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 116, 139);
+        doc.text(label, right ? W / 2 + 4 : margin, y);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(30, 41, 59);
+        doc.text(value, right ? W - margin : margin, y + 5, right ? { align: 'right' } : {});
+        if (!right) y += 14;
+      }
+
+      /* Invoice Details */
+      section('Invoice Details');
+      infoRow('Date Issued', dateStr);
+      infoRow('Due Date', status === 'paid' ? 'Paid' : dueStr);
+      var prevY = y;
+      infoRow('Billed To', userName);
+      y = prevY;
+      infoRow('Telegram ID', userId || '—', true);
+      y += 14;
+
+      /* Campaign Details */
+      section('Campaign Details');
+      prevY = y;
+      infoRow('Package', pkg + ' Plan');
+      y = prevY;
+      infoRow('Members Target', members, true);
+      y += 14;
+      prevY = y;
+      infoRow('Channel', channel);
+      y = prevY;
+      infoRow('Audience', audience, true);
+      y += 14;
+
+      /* Line items */
+      section('Order Summary');
+
+      function lineItem(label, value, color) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(71, 85, 105);
+        doc.text(label, margin, y);
+        doc.setFont('helvetica', 'bold');
+        if (color) doc.setTextColor(color[0], color[1], color[2]);
+        else doc.setTextColor(30, 41, 59);
+        doc.text(value, W - margin, y, { align: 'right' });
+        doc.setDrawColor(248, 250, 252);
+        doc.setLineWidth(0.3);
+        doc.line(margin, y + 3, W - margin, y + 3);
+        y += 10;
+      }
+
+      lineItem(pkg + ' Plan — ' + members, '$' + origPrice.toFixed(2));
+      if (discount > 0) lineItem('Discount (' + discount + '% off)', '-$' + discAmount.toFixed(2), [16, 185, 129]);
+      lineItem('Delivery Speed', speed);
+      lineItem('Payment Method', 'USDT (TRC-20)');
+
+      y += 3;
+      /* total box */
+      doc.setFillColor(239, 246, 255);
+      doc.roundedRect(margin, y, W - margin * 2, 16, 4, 4, 'F');
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(30, 41, 59);
+      doc.text('Total Paid', margin + 6, y + 10.5);
+      doc.setTextColor(37, 99, 235);
+      doc.text('$' + price.toFixed(2), W - margin - 6, y + 10.5, { align: 'right' });
+
+      y += 30;
+
+      /* footer */
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(148, 163, 184);
+      doc.text('Thank you for choosing TELES ADS. Questions? Contact @telesads on Telegram.', W / 2, y, { align: 'center' });
+
+      doc.save('TELES-ADS-' + inv + '.pdf');
+      showToast('PDF downloaded!');
+    } catch(err) {
+      showToast('PDF error: ' + err.message);
+    }
+  };
+
+  /* ── Share via Telegram ──────────────────────────────── */
+  window.shareInvoice = function() {
+    var text = '🧾 *TELES ADS Invoice ' + inv + '*\n\n'
+      + '📦 Package: ' + pkg + '\n'
+      + '👥 Members: ' + members + '\n'
+      + '📣 Channel: ' + channel + '\n'
+      + '💰 Total: $' + price.toFixed(2) + '\n\n'
+      + 'Managed by @telesads';
+    try {
+      var tg = window.Telegram && window.Telegram.WebApp;
+      if (tg && tg.switchInlineQuery) {
+        tg.switchInlineQuery(text, ['users', 'groups']);
+        return;
+      }
+    } catch(e) {}
+    /* fallback: copy to clipboard */
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function() { showToast('Invoice text copied!'); });
+    } else {
+      showToast('Long-press above to copy');
+    }
+  };
+
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 2200);
+  }
+
+  renderInvoice();
+
+})();
+</script>
+</body>
+</html>

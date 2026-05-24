@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+  <title>Place Order · TELES ADS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{min-height:100dvh;background:#f0f4ff;font-family:'Inter',system-ui,sans-serif;color:#1e293b;-webkit-font-smoothing:antialiased;}
+    .shell{max-width:430px;width:100%;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;}
+    .header{padding:14px 16px 8px;display:flex;align-items:center;gap:12px;}
+    .back-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.28);border:1.5px solid rgba(255,255,255,0.72);cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(32px) saturate(200%);-webkit-backdrop-filter:blur(32px) saturate(200%);box-shadow:0 4px 16px rgba(0,0,0,0.06),inset 0 1.5px 0 rgba(255,255,255,0.9),inset 0 -1px 0 rgba(0,0,0,0.05);flex-shrink:0;}
+    .page-title{font-size:20px;font-weight:800;letter-spacing:-0.02em;}
+    .scroll{flex:1;overflow-y:auto;padding:0 16px 120px;}
+
+    /* Steps indicator */
+    .steps{display:flex;align-items:center;gap:0;margin-bottom:20px;padding:0 4px;}
+    .step{display:flex;align-items:center;gap:6px;flex:1;}
+    .step-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;transition:all .3s;}
+    .step-num.done{background:#2563eb;color:#fff;}
+    .step-num.active{background:#2563eb;color:#fff;box-shadow:0 0 0 4px rgba(37,99,235,0.18);}
+    .step-num.pending{background:#e2e8f0;color:#94a3b8;}
+    .step-label{font-size:10px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;display:none;}
+    .step-line{flex:1;height:2px;background:#e2e8f0;margin:0 6px;}
+    .step-line.done{background:#2563eb;}
+
+    /* Section label */
+    .section-label{font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.07em;margin:20px 0 10px;}
+
+    /* Package card */
+    .pkg-card{background:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 1px 8px rgba(0,0,0,0.06);display:flex;align-items:center;gap:12px;margin-bottom:4px;}
+    .pkg-icon{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#2563eb,#7c3aed);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .pkg-name{font-size:15px;font-weight:700;}
+    .pkg-meta{font-size:12px;color:#64748b;margin-top:2px;}
+    .pkg-price{font-size:20px;font-weight:800;color:#2563eb;margin-left:auto;flex-shrink:0;}
+    .change-pkg{font-size:11px;color:#2563eb;font-weight:600;cursor:pointer;text-decoration:underline;margin-top:2px;}
+
+    /* Input */
+    .input-wrap{background:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 1px 6px rgba(0,0,0,0.05);}
+    .input-label{font-size:12px;font-weight:600;color:#64748b;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+    .input-label .req{color:#ef4444;font-size:10px;}
+    .inp{width:100%;border:none;outline:none;font-size:15px;font-weight:500;font-family:inherit;color:#1e293b;background:transparent;}
+    .inp::placeholder{color:#cbd5e1;}
+    .inp-border{border:1.5px solid #e2e8f0;border-radius:12px;padding:11px 14px;width:100%;font-size:14px;font-family:inherit;outline:none;color:#1e293b;background:#fff;transition:border-color .2s;}
+    .inp-border:focus{border-color:#2563eb;}
+    .inp-border::placeholder{color:#cbd5e1;}
+    textarea.inp-border{resize:none;line-height:1.5;}
+
+    /* Chip selectors */
+    .chips{display:flex;flex-wrap:wrap;gap:8px;}
+    .chip{padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid #e2e8f0;background:#f8fafc;color:#64748b;transition:all .2s;-webkit-tap-highlight-color:transparent;}
+    .chip.selected{background:#2563eb;color:#fff;border-color:#2563eb;box-shadow:0 2px 8px rgba(37,99,235,0.3);}
+    .chip.selected-green{background:#10b981;color:#fff;border-color:#10b981;}
+    .chip-flag{font-size:16px;margin-right:3px;}
+
+    /* Speed options */
+    .speed-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+    .speed-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;}
+    .speed-card.selected{border-color:#2563eb;background:rgba(37,99,235,0.05);}
+    .speed-icon{font-size:20px;margin-bottom:4px;}
+    .speed-name{font-size:12px;font-weight:700;color:#1e293b;}
+    .speed-days{font-size:10px;color:#94a3b8;margin-top:1px;}
+    .speed-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:999px;margin-top:4px;display:inline-block;}
+    .badge-green{background:rgba(16,185,129,0.12);color:#059669;}
+    .badge-amber{background:rgba(245,158,11,0.12);color:#d97706;}
+    .badge-red{background:rgba(239,68,68,0.12);color:#dc2626;}
+
+    /* TXID input */
+    .txid-wrap{background:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 1px 6px rgba(0,0,0,0.05);}
+    .txid-preview{font-size:11px;font-family:monospace;color:#64748b;background:#f1f5f9;border-radius:8px;padding:8px;margin-top:8px;word-break:break-all;display:none;}
+    .wallet-box{background:linear-gradient(135deg,#0f172a,#1e3a8a);border-radius:16px;padding:14px 16px;color:#fff;margin-bottom:4px;}
+    .wallet-title{font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
+    .wallet-addr{font-size:12px;font-family:monospace;word-break:break-all;background:rgba(255,255,255,0.08);border-radius:10px;padding:10px;line-height:1.6;}
+    .wallet-copy{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.7);cursor:pointer;}
+    .wallet-network{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+    .net-chip{font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.8);}
+    .net-tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+    .net-tab{font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;border:1.5px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.65);cursor:pointer;transition:all 0.18s;letter-spacing:0.3px;}
+    .net-tab.active{background:#fff;color:#1e3a8a;border-color:#fff;}
+
+    /* Order summary */
+    .summary-card{background:#fff;border-radius:18px;padding:16px;box-shadow:0 1px 8px rgba(0,0,0,0.06);}
+    .summary-row{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid #f1f5f9;}
+    .summary-row:last-child{border-bottom:none;}
+    .summary-key{font-size:13px;color:#64748b;font-weight:500;}
+    .summary-val{font-size:13px;font-weight:700;color:#1e293b;text-align:right;max-width:55%;}
+    .total-row{display:flex;justify-content:space-between;align-items:center;padding-top:12px;margin-top:4px;border-top:2px solid #f1f5f9;}
+    .total-label{font-size:14px;font-weight:700;}
+    .total-amt{font-size:22px;font-weight:800;color:#2563eb;}
+
+    /* Bottom CTA */
+    .bottom-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 12px);background:rgba(225,232,255,0.55);backdrop-filter:blur(36px) saturate(220%) brightness(1.08);-webkit-backdrop-filter:blur(36px) saturate(220%) brightness(1.08);border-top:1.5px solid rgba(255,255,255,0.72);box-shadow:0 -4px 24px rgba(37,99,235,0.06);}
+    .cta-btn{width:100%;padding:16px;border-radius:18px;border:1px solid rgba(147,197,253,0.45);background:rgba(29,78,216,0.74);backdrop-filter:blur(24px) saturate(200%) brightness(1.1);-webkit-backdrop-filter:blur(24px) saturate(200%) brightness(1.1);color:#fff;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 10px 32px rgba(37,99,235,0.34),inset 0 1.5px 0 rgba(255,255,255,0.28),inset 0 -1px 0 rgba(0,0,0,0.1);display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s;}
+    .cta-btn:disabled{opacity:.5;cursor:not-allowed;}
+    .cta-btn.loading{pointer-events:none;}
+    .spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Success state */
+    .success-card{background:#fff;border-radius:24px;padding:32px 20px;text-align:center;box-shadow:0 2px 20px rgba(0,0,0,0.08);margin:20px 0;}
+    .success-icon{font-size:56px;margin-bottom:12px;}
+    .success-title{font-size:22px;font-weight:800;margin-bottom:6px;}
+    .success-sub{font-size:14px;color:#64748b;line-height:1.5;}
+    .invoice-chip{display:inline-flex;align-items:center;gap:6px;background:#f0f4ff;border:1.5px solid #dbeafe;border-radius:12px;padding:8px 16px;font-size:13px;font-weight:700;color:#2563eb;margin:12px 0;}
+
+    .err-msg{font-size:12px;color:#ef4444;margin-top:6px;padding-left:4px;}
+    .optional-tag{font-size:10px;color:#94a3b8;font-weight:500;margin-left:4px;}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <div class="header">
+    <button class="back-btn" onclick="history.back()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+    </button>
+    <div class="page-title">Place Order</div>
+  </div>
+
+  <div class="scroll" id="scrollArea">
+
+    <!-- Steps -->
+    <div class="steps">
+      <div class="step">
+        <div class="step-num active" id="s1">1</div>
+      </div>
+      <div class="step-line" id="l1"></div>
+      <div class="step">
+        <div class="step-num pending" id="s2">2</div>
+      </div>
+      <div class="step-line" id="l2"></div>
+      <div class="step">
+        <div class="step-num pending" id="s3">3</div>
+      </div>
+      <div class="step-line" id="l3"></div>
+      <div class="step">
+        <div class="step-num pending" id="s4">4</div>
+      </div>
+    </div>
+
+    <!-- STEP 1: Package + Channel -->
+    <div id="step1">
+      <div class="section-label">Package</div>
+      <div class="pkg-card" id="pkgCard">
+        <div class="pkg-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg>
+        </div>
+        <div>
+          <div class="pkg-name" id="pkgName">Loading...</div>
+          <div class="pkg-meta" id="pkgMembers"></div>
+        </div>
+        <div>
+          <div class="pkg-price" id="pkgPrice"></div>
+          <a class="change-pkg" href="/market">Change</a>
+        </div>
+      </div>
+
+      <!-- Promo code banner on Step 1 -->
+      <div id="promoToggleBanner" onclick="togglePromoPanel()" style="display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(75,158,255,0.08),rgba(75,158,255,0.04));border:1.5px dashed rgba(75,158,255,0.4);border-radius:14px;padding:12px 14px;margin-bottom:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:.15s">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">🎟️</span>
+          <div>
+            <div id="promoBannerTitle" style="font-size:13px;font-weight:700;color:#4B9EFF">Promo Code</div>
+            <div id="promoBannerSub" style="font-size:11px;color:#64748b;margin-top:1px">Tap to enter your discount code</div>
+          </div>
+        </div>
+        <svg id="promoChevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4B9EFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div id="promoPanel" style="display:none;margin-bottom:14px">
+        <div style="background:#fff;border:1px solid rgba(75,158,255,0.25);border-radius:14px;padding:14px">
+          <div style="display:flex;gap:8px;align-items:stretch">
+            <input class="inp-border" type="text" id="promoInput" placeholder="Enter code (e.g. LAUNCH20)" autocomplete="off" autocorrect="off" spellcheck="false" style="text-transform:uppercase;flex:1;margin:0;font-size:14px;font-weight:600;letter-spacing:1px" oninput="this.value=this.value.toUpperCase();resetPromo()" />
+            <button id="promoBtn" onclick="applyPromo()" style="background:#4B9EFF;color:#fff;border:none;border-radius:12px;padding:0 18px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:76px;flex-shrink:0;height:42px">Apply</button>
+          </div>
+          <div id="promoMsg" style="font-size:12px;margin-top:8px;display:none"></div>
+        </div>
+      </div>
+
+      <div class="section-label">Your Telegram Channel <span class="req" style="color:#ef4444">*</span></div>
+      <div class="input-wrap">
+        <div class="input-label">Channel Username or Link</div>
+        <input class="inp-border" type="text" id="channelInput" placeholder="@YourChannel or t.me/YourChannel" autocomplete="off" autocorrect="off" spellcheck="false" />
+        <div class="err-msg" id="channelErr" style="display:none">Please enter your channel username or link</div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Targeting -->
+    <div id="step2" style="display:none">
+      <div class="section-label">Audience Type <span class="req" style="color:#ef4444">*</span></div>
+      <div class="input-wrap" style="padding-bottom:14px">
+        <div class="chips" id="audienceChips">
+          <div class="chip" data-val="Forex Trading" onclick="selectChip(this,'audience')">📈 Forex Trading</div>
+          <div class="chip" data-val="Binary Trading" onclick="selectChip(this,'audience')">🎯 Binary Trading</div>
+          <div class="chip" data-val="Quotex Traders" onclick="selectChip(this,'audience')">⚡ Quotex Traders</div>
+          <div class="chip" data-val="Crypto Trading" onclick="selectChip(this,'audience')">🪙 Crypto Trading</div>
+          <div class="chip" data-val="Stock Trading" onclick="selectChip(this,'audience')">📊 Stock Trading</div>
+          <div class="chip" data-val="Gold & Commodities" onclick="selectChip(this,'audience')">🥇 Gold & Commodities</div>
+          <div class="chip" data-val="NFT & Web3" onclick="selectChip(this,'audience')">🌐 NFT & Web3</div>
+          <div class="chip" data-val="General Investing" onclick="selectChip(this,'audience')">💼 General Investing</div>
+        </div>
+        <div class="err-msg" id="audienceErr" style="display:none">Please select an audience type</div>
+      </div>
+
+      <div class="section-label">Country / Region Targeting</div>
+      <div class="input-wrap" style="padding-bottom:14px">
+        <div class="chips" id="countryChips">
+          <div class="chip selected" data-val="Worldwide" onclick="selectChip(this,'country')"><span class="chip-flag">🌍</span> Worldwide</div>
+          <div class="chip" data-val="India" onclick="selectChip(this,'country')"><span class="chip-flag">🇮🇳</span> India</div>
+          <div class="chip" data-val="Arab Countries" onclick="selectChip(this,'country')"><span class="chip-flag">🇸🇦</span> Arab Countries</div>
+          <div class="chip" data-val="USA & Canada" onclick="selectChip(this,'country')"><span class="chip-flag">🇺🇸</span> USA & Canada</div>
+          <div class="chip" data-val="Pakistan" onclick="selectChip(this,'country')"><span class="chip-flag">🇵🇰</span> Pakistan</div>
+          <div class="chip" data-val="Indonesia" onclick="selectChip(this,'country')"><span class="chip-flag">🇮🇩</span> Indonesia</div>
+          <div class="chip" data-val="Turkey" onclick="selectChip(this,'country')"><span class="chip-flag">🇹🇷</span> Turkey</div>
+          <div class="chip" data-val="Russia & CIS" onclick="selectChip(this,'country')"><span class="chip-flag">🇷🇺</span> Russia & CIS</div>
+          <div class="chip" data-val="Europe" onclick="selectChip(this,'country')"><span class="chip-flag">🇪🇺</span> Europe</div>
+          <div class="chip" data-val="Africa" onclick="selectChip(this,'country')"><span class="chip-flag">🌍</span> Africa</div>
+          <div class="chip" data-val="Southeast Asia" onclick="selectChip(this,'country')"><span class="chip-flag">🌏</span> SE Asia</div>
+          <div class="chip" data-val="Latin America" onclick="selectChip(this,'country')"><span class="chip-flag">🌎</span> Latin America</div>
+        </div>
+      </div>
+
+      <div class="section-label">Delivery Speed</div>
+      <div class="speed-grid">
+        <div class="speed-card selected" data-val="Standard" onclick="selectSpeed(this)">
+          <div class="speed-icon">🚀</div>
+          <div class="speed-name">Standard</div>
+          <div class="speed-days">5–7 days</div>
+          <div class="speed-badge badge-green">Free</div>
+        </div>
+        <div class="speed-card" data-val="Fast" onclick="selectSpeed(this)">
+          <div class="speed-icon">⚡</div>
+          <div class="speed-name">Fast</div>
+          <div class="speed-days">2–3 days</div>
+          <div class="speed-badge badge-amber">Priority</div>
+        </div>
+        <div class="speed-card" data-val="Express" onclick="selectSpeed(this)">
+          <div class="speed-icon">🔥</div>
+          <div class="speed-name">Express</div>
+          <div class="speed-days">24–48 hrs</div>
+          <div class="speed-badge badge-red">Rush</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Payment -->
+    <div id="step3" style="display:none">
+      <div class="section-label">Send Payment To</div>
+      <div class="wallet-box">
+        <div class="wallet-title" id="walletTitle">USDT · TRC20 (Tron)</div>
+        <div class="net-tabs">
+          <span class="net-tab active" onclick="selectNetwork(this,'trc20')">USDT TRC20</span>
+          <span class="net-tab" onclick="selectNetwork(this,'bep20')">USDT BEP20</span>
+          <span class="net-tab" onclick="selectNetwork(this,'btc_bep20')">BTC · BEP20</span>
+        </div>
+        <div class="wallet-addr" id="walletAddr">TDhNivo7HsfKu2jmxyjKBWXgkR9pn8dJPf</div>
+        <div class="wallet-copy" onclick="copyWallet()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span id="copyText">Tap to copy address</span>
+        </div>
+      </div>
+
+      <div class="section-label">Amount to Send</div>
+      <div class="input-wrap" style="background:linear-gradient(135deg,rgba(37,99,235,0.06),rgba(124,58,237,0.06))">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:14px;color:#64748b;font-weight:500">Exact Amount</span>
+          <span style="font-size:26px;font-weight:800;color:#2563eb" id="payAmt">$—</span>
+        </div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px">Send EXACTLY this amount — no more, no less</div>
+      </div>
+
+      <div class="section-label">Payment Proof (Transaction ID) <span class="optional-tag">optional but speeds up activation</span></div>
+      <div class="txid-wrap">
+        <div class="input-label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6"/><path d="M12 9v6"/><rect x="2" y="2" width="20" height="20" rx="4"/></svg>
+          TXID / Transaction Hash
+        </div>
+        <input class="inp-border" type="text" id="txidInput" placeholder="Paste your TXID here (e.g. 5e9f3b2a...)" autocomplete="off" autocorrect="off" spellcheck="false" />
+        <div style="font-size:11px;color:#94a3b8;margin-top:8px">Find this in your crypto wallet after sending. Speeds up payment verification from hours to minutes.</div>
+      </div>
+
+      <!-- Promo applied reminder in Step 3 -->
+      <div id="promoAppliedStep3" style="display:none;background:linear-gradient(135deg,rgba(22,163,74,0.08),rgba(37,99,235,0.06));border:1.5px solid rgba(22,163,74,0.25);border-radius:14px;padding:12px 14px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:18px">🎟️</span>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:#16a34a" id="promoAppliedLabel">Code applied — 20% OFF</div>
+              <div style="font-size:11px;color:#64748b">Discount included in the amount above</div>
+            </div>
+          </div>
+          <button onclick="removePromoFromStep3()" style="background:none;border:none;font-size:11px;color:#64748b;cursor:pointer;text-decoration:underline;font-weight:600">Remove</button>
+        </div>
+      </div>
+
+      <div class="section-label">Order Notes <span class="optional-tag">optional</span></div>
+      <textarea class="inp-border" id="notesInput" placeholder="Any specific instructions? (e.g. Focus on Arabic-speaking traders, avoid bots)" rows="3"></textarea>
+    </div>
+
+    <!-- STEP 4: Review -->
+    <div id="step4" style="display:none">
+      <div class="section-label">Order Summary</div>
+      <div class="summary-card">
+        <div class="summary-row">
+          <span class="summary-key">Package</span>
+          <span class="summary-val" id="sum-pkg">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-key">Channel</span>
+          <span class="summary-val" id="sum-channel">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-key">Audience</span>
+          <span class="summary-val" id="sum-audience">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-key">Country</span>
+          <span class="summary-val" id="sum-country">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-key">Delivery Speed</span>
+          <span class="summary-val" id="sum-speed">—</span>
+        </div>
+        <div class="summary-row" id="sum-txid-row" style="display:none">
+          <span class="summary-key">TXID</span>
+          <span class="summary-val" id="sum-txid" style="font-family:monospace;font-size:11px;word-break:break-all">—</span>
+        </div>
+        <div class="summary-row" id="sum-notes-row" style="display:none">
+          <span class="summary-key">Notes</span>
+          <span class="summary-val" id="sum-notes" style="font-size:12px">—</span>
+        </div>
+        <div class="summary-row" id="sum-discount-row" style="display:none">
+          <span class="summary-key" style="color:#16a34a">Discount</span>
+          <span class="summary-val" id="sum-discount" style="color:#16a34a;font-weight:700">—</span>
+        </div>
+        <div class="total-row">
+          <span class="total-label">Total</span>
+          <span class="total-amt" id="sum-total">$—</span>
+        </div>
+      </div>
+      <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:14px;padding:12px 14px;margin-top:12px;font-size:12px;color:#92400e;line-height:1.5;">
+        ⚠️ Your order is <b>pending</b> until we confirm your payment. Bot will notify you within 15–30 minutes after confirmation.
+      </div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div id="successView" style="display:none">
+      <div class="success-card">
+        <div class="success-icon">🎉</div>
+        <div class="success-title">Order Placed!</div>
+        <div class="success-sub">Your campaign request has been submitted. Our team will confirm payment and start delivery.</div>
+        <div class="invoice-chip" id="invoiceChip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Invoice: <span id="invoiceNum">TA-0000</span>
+        </div>
+        <div class="success-sub" style="margin-top:4px;font-size:12px">You'll receive a Telegram bot message when your payment is confirmed and campaign starts.</div>
+      </div>
+      <a id="invDownloadBtn" href="/invoice.html" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px;border-radius:18px;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;font-size:15px;font-weight:700;font-family:inherit;text-decoration:none;margin-bottom:10px;box-shadow:0 4px 14px rgba(37,99,235,0.3);">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Invoice PDF
+      </a>
+      <button class="cta-btn" onclick="window.location.href='/'" style="position:relative;display:flex;width:100%;background:#f1f5f9;color:#1e293b;box-shadow:none;">Go to Dashboard</button>
+    </div>
+
+  </div>
+
+  <div class="bottom-bar" id="bottomBar">
+    <button class="cta-btn" id="ctaBtn" onclick="nextStep()">
+      Continue <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  var currentStep = 1;
+  var selectedAudience = '';
+  var selectedCountry = 'Worldwide';
+  var selectedSpeed = 'Standard';
+  var pkgData = null;
+  var appliedDiscount = 0;
+  var appliedPromoCode = null;
+  var referralCode = null;
+  var WALLETS = {
+    trc20:    { label: 'USDT · TRC20 (Tron)',          addr: 'TDhNivo7HsfKu2jmxyjKBWXgkR9pn8dJPf' },
+    bep20:    { label: 'USDT · BEP20 (BNB Chain)',      addr: '0x0fa48b8d8379e1ac7f6b8c5cff3d8d8c419492a9' },
+    btc_bep20:{ label: 'BTC · BEP20 (BNB Smart Chain)', addr: '0x0fa48b8d8379e1ac7f6b8c5cff3d8d8c419492a9' }
+  };
+  var selectedNetwork = 'trc20';
+  function activeWallet(){ return WALLETS[selectedNetwork]; }
+  function selectNetwork(el, key) {
+    document.querySelectorAll('.net-tab').forEach(function(t){ t.classList.remove('active'); });
+    el.classList.add('active');
+    selectedNetwork = key;
+    var w = WALLETS[key];
+    document.getElementById('walletTitle').textContent = w.label;
+    document.getElementById('walletAddr').textContent = w.addr;
+    document.getElementById('copyText').textContent = 'Tap to copy address';
+  }
+
+  // Get Telegram user
+  function getTgUser() {
+    try { var u = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user; return u || null; } catch(e) { return null; }
+  }
+
+  // Get pkg id from URL param
+  function getPkgId() {
+    var p = new URLSearchParams(window.location.search);
+    return p.get('pkg') || p.get('packageId') || null;
+  }
+
+  // Read referral code from URL or Telegram start_param
+  function initReferral() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var refFromUrl = params.get('ref');
+      if(refFromUrl) { referralCode = refFromUrl.startsWith('ref_') ? refFromUrl : 'ref_' + refFromUrl; return; }
+      var tgApp = window.Telegram && window.Telegram.WebApp;
+      if(tgApp && tgApp.initDataUnsafe && tgApp.initDataUnsafe.start_param) {
+        var sp = tgApp.initDataUnsafe.start_param;
+        if(sp.startsWith('ref_')) { referralCode = sp; }
+      }
+    } catch(e) {}
+  }
+
+  // Toggle promo panel visibility
+  function togglePromoPanel() {
+    if(appliedPromoCode) return; // keep open when code applied
+    var panel = document.getElementById('promoPanel');
+    var chevron = document.getElementById('promoChevron');
+    var open = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : 'block';
+    chevron.style.transform = open ? '' : 'rotate(180deg)';
+    if(!open) setTimeout(function(){ document.getElementById('promoInput').focus(); }, 60);
+  }
+
+  // Promo code functions
+  async function applyPromo() {
+    var code = document.getElementById('promoInput').value.trim();
+    if(!code) return;
+    var btn = document.getElementById('promoBtn');
+    var msg = document.getElementById('promoMsg');
+    btn.disabled = true;
+    btn.textContent = '...';
+    try {
+      var res = await fetch('/api/promo/validate', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({code: code})
+      });
+      var data = await res.json();
+      msg.style.display = 'block';
+      if(data.valid) {
+        appliedDiscount = data.discountPct;
+        appliedPromoCode = data.code;
+        msg.style.color = '#16a34a';
+        msg.textContent = '✅ ' + data.message;
+        btn.textContent = '✓ Applied';
+        btn.style.background = 'linear-gradient(135deg,#16a34a,#15803d)';
+        // Update banner to show discount applied
+        document.getElementById('promoToggleBanner').style.background = 'linear-gradient(135deg,rgba(22,163,74,0.1),rgba(37,99,235,0.06))';
+        document.getElementById('promoToggleBanner').style.borderColor = 'rgba(22,163,74,0.35)';
+        document.getElementById('promoToggleBanner').style.borderStyle = 'solid';
+        document.getElementById('promoBannerTitle').textContent = '🎉 ' + data.discountPct + '% discount applied!';
+        document.getElementById('promoBannerTitle').style.color = '#16a34a';
+        document.getElementById('promoBannerSub').textContent = 'Code: ' + data.code + ' — tap to remove';
+        document.getElementById('promoChevron').setAttribute('stroke','#16a34a');
+        document.getElementById('promoChevron').style.transform = 'rotate(180deg)';
+        // Update payAmt to show discounted price
+        if(pkgData) {
+          var disc = Math.round(pkgData.price * (1 - appliedDiscount/100) * 100) / 100;
+          document.getElementById('payAmt').textContent = '$' + disc.toFixed(2);
+          document.getElementById('payAmt').style.color = '#16a34a';
+        }
+        // Show reminder in step 3
+        document.getElementById('promoAppliedStep3').style.display = 'block';
+        document.getElementById('promoAppliedLabel').textContent = 'Code applied — ' + data.discountPct + '% OFF';
+      } else {
+        msg.style.color = '#dc2626';
+        msg.textContent = '❌ ' + (data.message || 'Invalid code');
+        btn.disabled = false;
+        btn.textContent = 'Apply';
+      }
+    } catch(e) {
+      msg.style.display = 'block'; msg.style.color = '#dc2626'; msg.textContent = 'Network error';
+      btn.disabled = false; btn.textContent = 'Apply';
+    }
+  }
+
+  function resetPromo() {
+    if(!appliedPromoCode) return;
+    appliedDiscount = 0;
+    appliedPromoCode = null;
+    var msg = document.getElementById('promoMsg');
+    msg.style.display = 'none';
+    var btn = document.getElementById('promoBtn');
+    btn.disabled = false; btn.textContent = 'Apply'; btn.style.background = '#4B9EFF';
+    // Reset banner
+    document.getElementById('promoToggleBanner').style.background = '';
+    document.getElementById('promoToggleBanner').style.borderColor = '';
+    document.getElementById('promoToggleBanner').style.borderStyle = 'dashed';
+    document.getElementById('promoBannerTitle').textContent = 'Promo Code';
+    document.getElementById('promoBannerTitle').style.color = '#4B9EFF';
+    document.getElementById('promoBannerSub').textContent = 'Tap to enter your discount code';
+    document.getElementById('promoChevron').setAttribute('stroke','#4B9EFF');
+    // Hide step 3 reminder
+    document.getElementById('promoAppliedStep3').style.display = 'none';
+    if(pkgData) {
+      document.getElementById('payAmt').textContent = '$' + pkgData.price;
+      document.getElementById('payAmt').style.color = '';
+    }
+  }
+
+  window.removePromoFromStep3 = function() {
+    document.getElementById('promoInput').value = '';
+    resetPromo();
+    // Close panel and go back to step 1 to show banner reset
+    document.getElementById('promoPanel').style.display = 'none';
+    document.getElementById('promoChevron').style.transform = '';
+  };
+
+  // Load package data
+  async function loadPackage() {
+    var pid = getPkgId();
+    try {
+      var res = await fetch('/api/packages');
+      var data = await res.json();
+      var pkgs = data.packages || [];
+      var pkg = pid ? pkgs.find(function(p){ return String(p.id) === String(pid); }) : pkgs.find(function(p){ return p.popular; }) || pkgs[0];
+      if(!pkg && pkgs.length > 0) pkg = pkgs[0];
+      if(pkg) {
+        pkgData = pkg;
+        document.getElementById('pkgName').textContent = pkg.name;
+        document.getElementById('pkgMembers').textContent = pkg.members + ' members';
+        document.getElementById('pkgPrice').textContent = '$' + pkg.price;
+        document.getElementById('payAmt').textContent = '$' + pkg.price;
+      }
+    } catch(e) {
+      document.getElementById('pkgName').textContent = 'Selected Package';
+    }
+    // Pre-fill channel from Telegram user
+    var tg = getTgUser();
+    if(tg && tg.username) {
+      document.getElementById('channelInput').placeholder = '@' + tg.username + '_signals (or your channel)';
+    }
+  }
+
+  // Chip selection
+  function selectChip(el, type) {
+    var group = type === 'audience' ? 'audienceChips' : 'countryChips';
+    document.querySelectorAll('#' + group + ' .chip').forEach(function(c){ c.classList.remove('selected'); });
+    el.classList.add('selected');
+    if(type === 'audience') { selectedAudience = el.dataset.val; document.getElementById('audienceErr').style.display='none'; }
+    else selectedCountry = el.dataset.val;
+  }
+
+  function selectSpeed(el) {
+    document.querySelectorAll('.speed-card').forEach(function(c){ c.classList.remove('selected'); });
+    el.classList.add('selected');
+    selectedSpeed = el.dataset.val;
+  }
+
+  function copyWallet() {
+    var addr = activeWallet().addr;
+    navigator.clipboard.writeText(addr).then(function(){
+      document.getElementById('copyText').textContent = '✅ Copied!';
+      setTimeout(function(){ document.getElementById('copyText').textContent = 'Tap to copy address'; }, 2000);
+    }).catch(function(){
+      var t = document.createElement('textarea');
+      t.value = addr; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
+      document.getElementById('copyText').textContent = '✅ Copied!';
+      setTimeout(function(){ document.getElementById('copyText').textContent = 'Tap to copy address'; }, 2000);
+    });
+  }
+
+  function updateSteps(step) {
+    for(var i=1; i<=4; i++){
+      var el = document.getElementById('s'+i);
+      if(i < step){ el.className='step-num done'; el.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'; }
+      else if(i === step){ el.className='step-num active'; el.textContent=i; }
+      else{ el.className='step-num pending'; el.textContent=i; }
+    }
+    for(var j=1; j<=3; j++){
+      document.getElementById('l'+j).className = 'step-line' + (j < step ? ' done' : '');
+    }
+  }
+
+  function showStep(step) {
+    for(var i=1; i<=4; i++){
+      document.getElementById('step'+i).style.display = i===step ? 'block' : 'none';
+    }
+    updateSteps(step);
+    currentStep = step;
+    // Update button
+    var btn = document.getElementById('ctaBtn');
+    if(step === 4) {
+      btn.innerHTML = '🚀 Confirm &amp; Place Order';
+    } else if(step === 3) {
+      btn.innerHTML = 'Review Order <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>';
+    } else {
+      btn.innerHTML = 'Continue <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>';
+    }
+    document.getElementById('scrollArea').scrollTo({top:0, behavior:'smooth'});
+  }
+
+  function fillSummary() {
+    document.getElementById('sum-pkg').textContent = pkgData ? pkgData.name : '—';
+    document.getElementById('sum-channel').textContent = document.getElementById('channelInput').value.trim();
+    document.getElementById('sum-audience').textContent = selectedAudience;
+    document.getElementById('sum-country').textContent = selectedCountry;
+    document.getElementById('sum-speed').textContent = selectedSpeed;
+    var basePrice = pkgData ? pkgData.price : 0;
+    var finalPrice = basePrice;
+    if(appliedDiscount > 0 && basePrice > 0) {
+      finalPrice = Math.round(basePrice * (1 - appliedDiscount / 100) * 100) / 100;
+      document.getElementById('sum-discount').textContent = '-' + appliedDiscount + '% (-$' + (basePrice - finalPrice).toFixed(2) + ')';
+      document.getElementById('sum-discount-row').style.display = 'flex';
+    } else {
+      document.getElementById('sum-discount-row').style.display = 'none';
+    }
+    document.getElementById('sum-total').textContent = basePrice ? '$' + finalPrice.toFixed(2) : '—';
+    var txid = document.getElementById('txidInput').value.trim();
+    var notes = document.getElementById('notesInput').value.trim();
+    if(txid){ document.getElementById('sum-txid').textContent = txid; document.getElementById('sum-txid-row').style.display='flex'; }
+    if(notes){ document.getElementById('sum-notes').textContent = notes; document.getElementById('sum-notes-row').style.display='flex'; }
+  }
+
+  function showOrderError(msg) {
+    var btn = document.getElementById('ctaBtn');
+    btn.innerHTML = '🚀 Confirm & Place Order';
+    btn.disabled = false;
+    /* prefer Telegram native alert; fall back to inline banner */
+    var tgApp = window.Telegram && window.Telegram.WebApp;
+    if (tgApp && tgApp.showAlert) {
+      tgApp.showAlert(msg);
+    } else {
+      var existing = document.getElementById('orderErrBanner');
+      if (existing) existing.remove();
+      var banner = document.createElement('div');
+      banner.id = 'orderErrBanner';
+      banner.style.cssText = 'background:#fef2f2;border:1.5px solid #fca5a5;border-radius:14px;padding:12px 14px;margin-top:12px;font-size:13px;color:#dc2626;font-weight:600;line-height:1.4;';
+      banner.textContent = '⚠️ ' + msg;
+      document.getElementById('step4').appendChild(banner);
+      banner.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }
+
+  async function submitOrder() {
+    var btn = document.getElementById('ctaBtn');
+    btn.innerHTML = '<div class="spinner"></div> Placing Order...';
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    /* remove any previous error banner */
+    var prev = document.getElementById('orderErrBanner');
+    if (prev) prev.remove();
+
+    try {
+      var tg = getTgUser();
+      if (!tg || !tg.id) {
+        showOrderError('Could not identify your Telegram account. Please open this page from the bot.');
+        return;
+      }
+
+      var body = {
+        packageId: pkgData ? pkgData.id : null,
+        channelLink: document.getElementById('channelInput').value.trim(),
+        channelUsername: document.getElementById('channelInput').value.trim().replace(/^@/, '').replace(/^(https?:\/\/)?(t\.me\/)?/, ''),
+        audience: selectedAudience,
+        targetCountry: selectedCountry,
+        deliverySpeed: selectedSpeed,
+        paymentProof: document.getElementById('txidInput').value.trim() || null,
+        orderNotes: document.getElementById('notesInput').value.trim() || null,
+        promoCode: appliedPromoCode || null,
+        referralCode: referralCode || null
+      };
+      var headers = {'Content-Type': 'application/json', 'x-telegram-user-id': String(tg.id)};
+
+      /* 30-second timeout so the button never freezes permanently */
+      var controller = new AbortController();
+      var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
+
+      var res = await fetch('/api/campaigns', {
+        method: 'POST', headers: headers,
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      /* safely parse — server might return HTML on errors */
+      var data = {};
+      var raw = await res.text();
+      try { data = JSON.parse(raw); } catch(e) { /* non-JSON response */ }
+
+      if (!res.ok) {
+        showOrderError(data.error || ('Server error ' + res.status + '. Please try again.'));
+        return;
+      }
+
+      /* ── success ── */
+      var invNum = data.invoiceNumber || ('TA-' + data.id);
+      document.getElementById('invoiceNum').textContent = invNum;
+      document.getElementById('step4').style.display = 'none';
+      document.getElementById('successView').style.display = 'block';
+      document.getElementById('bottomBar').style.display = 'none';
+      updateSteps(5);
+      fireConfetti();
+
+      /* build invoice download URL with all order params */
+      var tgU = getTgUser();
+      var basePrice  = pkgData ? pkgData.price : 0;
+      var finalPrice = appliedDiscount > 0 && basePrice > 0
+        ? Math.round(basePrice * (1 - appliedDiscount / 100) * 100) / 100
+        : basePrice;
+      var invParams = new URLSearchParams({
+        inv:      invNum,
+        pkg:      pkgData ? pkgData.name    : '',
+        members:  pkgData ? pkgData.members : '',
+        price:    finalPrice,
+        channel:  document.getElementById('channelInput').value.trim(),
+        audience: selectedAudience || '',
+        speed:    selectedSpeed    || 'Standard',
+        discount: appliedDiscount  || 0,
+        status:   'pending',
+        name:     tgU ? (tgU.first_name + (tgU.last_name ? ' ' + tgU.last_name : '')) : '',
+        uid:      tgU ? String(tgU.id) : ''
+      });
+      document.getElementById('invDownloadBtn').href = '/invoice.html?' + invParams.toString();
+
+    } catch(err) {
+      var msg = err.name === 'AbortError'
+        ? 'Request timed out. Your order may have been placed — check your Telegram for a confirmation message.'
+        : ('Something went wrong: ' + err.message);
+      showOrderError(msg);
+    } finally {
+      document.getElementById('ctaBtn').classList.remove('loading');
+    }
+  }
+
+  function nextStep() {
+    if(currentStep === 1) {
+      var ch = document.getElementById('channelInput').value.trim();
+      if(!ch){ document.getElementById('channelErr').style.display='block'; return; }
+      if(!pkgData){ alert('Package not loaded. Please go back and select a package.'); return; }
+      showStep(2);
+    } else if(currentStep === 2) {
+      if(!selectedAudience){ document.getElementById('audienceErr').style.display='block'; return; }
+      showStep(3);
+    } else if(currentStep === 3) {
+      fillSummary();
+      showStep(4);
+    } else if(currentStep === 4) {
+      submitOrder();
+    }
+  }
+
+  /* ── ANIMATION 3: Confetti burst on order success ── */
+  function fireConfetti() {
+    var canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;';
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    var ctx = canvas.getContext('2d');
+    var COLORS = ['#2563eb','#7c3aed','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4'];
+    var particles = [];
+    for (var i = 0; i < 130; i++) {
+      particles.push({
+        x:   canvas.width  * Math.random(),
+        y:   -10 - Math.random() * 60,
+        w:   5  + Math.random() * 9,
+        h:   8  + Math.random() * 6,
+        c:   COLORS[Math.floor(Math.random() * COLORS.length)],
+        vx:  (Math.random() - 0.5) * 5,
+        vy:  1.5 + Math.random() * 4,
+        rot: Math.random() * 360,
+        vr:  (Math.random() - 0.5) * 9,
+        op:  1
+      });
+    }
+    var t0 = Date.now();
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      var elapsed = Date.now() - t0;
+      var alive = false;
+      particles.forEach(function(p) {
+        if (p.op <= 0) return;
+        alive = true;
+        p.x += p.vx; p.y += p.vy;
+        p.vy += 0.09;
+        p.rot += p.vr;
+        if (elapsed > 1600) p.op -= 0.018;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.op);
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot * Math.PI / 180);
+        ctx.fillStyle = p.c;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      });
+      if (alive && elapsed < 3200) requestAnimationFrame(draw);
+      else canvas.remove();
+    }
+    requestAnimationFrame(draw);
+  }
+
+  // Init
+  initReferral();
+  loadPackage().then(function() {
+    var startStep = parseInt(new URLSearchParams(window.location.search).get('step') || '1');
+    if (startStep === 3) {
+      selectedAudience = 'crypto';
+      showStep(3);
+    }
+  });
+  document.getElementById('walletAddr').textContent = WALLETS.trc20.addr;
+</script>
+</body>
+</html>
