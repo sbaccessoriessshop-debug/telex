@@ -14,10 +14,17 @@ async function ensureTables() {
     const { Pool } = require('pg');
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
     await pool.query(`
-      -- Add missing columns to campaigns table if they don't exist
+      -- Fix campaigns table
       ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS network TEXT;
       ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
       ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT NOW();
+
+      -- Fix invoices table: add missing columns the server expects
+      ALTER TABLE invoices ADD COLUMN IF NOT EXISTS invoice_number TEXT NOT NULL DEFAULT '';
+      ALTER TABLE invoices ADD COLUMN IF NOT EXISTS package_name TEXT NOT NULL DEFAULT '';
+      ALTER TABLE invoices DROP COLUMN IF EXISTS description;
+      ALTER TABLE invoices DROP COLUMN IF EXISTS campaign_id;
+      ALTER TABLE invoices DROP COLUMN IF EXISTS telegram_id;
 
       CREATE TABLE IF NOT EXISTS promo_codes (
         id SERIAL PRIMARY KEY,
